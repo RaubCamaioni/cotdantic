@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coursor-on-target"
+version = "0.1.0"
+requires-python = ">=3.7"
+authors = [{ name="Raub Camaioni"}]
+maintainers = [{ name="Raub Camaioni"}]
+description = "Pythonic coursor-on-target xml/protobuf generation"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["cot", "coursor", "target"]
+
+dependencies = [
+    "takproto>=3.0.0",
+    "pydantic_xml>=2.0.0"
+]
+
+[project.optional-dependencies]
+testing = ["pytest>=6.2.4"]

@@ -2,42 +2,6 @@ from typing import List, Callable, Tuple
 from threading import Thread
 import platform
 import socket
-import time
-
-from takproto import parse_proto, xml2proto, TAKProtoVer
-from takproto.functions import msg2proto
-
-import xml.etree.ElementTree as ET
-import cot
-
-
-def is_xml(data: bytes) -> bool:
-    try:
-        return ET.fromstring(data.decode())
-    except ET.ParseError:
-        return None
-    except UnicodeDecodeError:
-        return None
-
-
-def is_proto(data: bytes) -> bool:
-    try:
-        tak_message = parse_proto(data)
-        return bool(tak_message)
-    except Exception as e:
-        return False
-
-
-def parse_cot(data):
-
-    if is_xml(data):
-        p = xml2proto(data)
-        return True, parse_proto(p)
-
-    if is_proto(data):
-        return True, parse_proto(data)
-
-    return False, None
 
 
 class MulticastListener:
@@ -145,53 +109,3 @@ class MulticastListener:
         self.stop()
         if exc_type is KeyboardInterrupt:
             return True
-
-
-def generate_cot():
-    point = cot.Point(lat=38.696644, lon=-77.140433)
-    contact = cot.Contact(callsign="DogMan", endpoint="172.16.0.128:4242:tcp")
-    contact = cot.Contact(callsign="DogMan", endpoint=None)
-    detail = cot.Detail(contact=contact)
-    event = cot.Event(
-        type="a-f-G-U-C-I",
-        point=point,
-        detail=detail,
-    )
-    event.type = "a-f-A-M-H-Q-r"
-
-    xml = event.to_xml(
-        pretty_print=True, encoding="UTF-8", standalone=True, skip_empty=True
-    )
-
-    return xml
-
-
-def print_cot(data: bytes):
-
-    proto = None
-
-    if is_xml(data):
-        proto = xml2proto(data)
-
-    if is_proto(data):
-        proto = data
-
-    if proto is not None:
-        print("========================================================")
-        print("proto:")
-        print(proto, "\n")
-        print("xml:")
-        print(cot.proto2model(proto).to_xml(pretty_print=True).decode())
-
-
-if __name__ == "__main__":
-
-    print("Starting Multicast Listener: \n")
-    with MulticastListener("239.2.3.1", 6969, "0.0.0.0") as mcl:
-
-        mcl.add_observer(lambda data, server: print_cot(data))
-
-        while True:
-            time.sleep(30)
-
-    print("Exiting")
