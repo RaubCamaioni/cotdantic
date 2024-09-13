@@ -1,24 +1,16 @@
-from models import Event, Point, Contact, Status, Takv, PrecisionLocation, Detail
+from .models import (
+    Event,
+    Point,
+    Contact,
+    Status,
+    Takv,
+    PrecisionLocation,
+    Detail,
+    epoch2iso,
+)
 from takproto import parse_proto, xml2proto
 from pydantic_xml import BaseXmlModel
 import xml.etree.ElementTree as ET
-import datetime
-
-
-def datetime2iso(time: datetime.datetime):
-    return f'{time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-4]}Z'
-
-
-def isotime(hours: int = 0, minutes: int = 0, seconds: int = 0) -> str:
-    current = datetime.datetime.now(datetime.timezone.utc)
-    offset = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
-    time = current + offset
-    return datetime2iso(time)
-
-
-def epoch2iso(epoch: int):
-    time = datetime.datetime.fromtimestamp(epoch / 1000, tz=datetime.timezone.utc)
-    return datetime2iso(time)
 
 
 def is_xml(data: bytes) -> bool:

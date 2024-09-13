@@ -1,4 +1,4 @@
-from models import (
+from .models import (
     Point,
     Contact,
     Link,
@@ -12,4 +12,7 @@ from models import (
     Alias,
 )
 
-from converter import proto2model, model2proto
+from .converters import (
+    proto2model,
+    model2proto,
+)

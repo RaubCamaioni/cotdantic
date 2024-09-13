@@ -1,8 +1,24 @@
 from pydantic_xml import BaseXmlModel, element, attr
 from functools import partial
 from typing import Optional
-from converter import isotime
 from uuid import uuid4
+import datetime
+
+
+def datetime2iso(time: datetime.datetime):
+    return f'{time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-4]}Z'
+
+
+def isotime(hours: int = 0, minutes: int = 0, seconds: int = 0) -> str:
+    current = datetime.datetime.now(datetime.timezone.utc)
+    offset = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
+    time = current + offset
+    return datetime2iso(time)
+
+
+def epoch2iso(epoch: int):
+    time = datetime.datetime.fromtimestamp(epoch / 1000, tz=datetime.timezone.utc)
+    return datetime2iso(time)
 
 
 class Point(BaseXmlModel, skip_empty=True):
