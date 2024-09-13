@@ -83,7 +83,7 @@ class Detail(BaseXmlModel, tag="detail", skip_empty=True):
 class Event(BaseXmlModel, tag="event", skip_empty=True):
     version: float = attr(default=2.0)
     type: str = attr()
-    uid: str = attr(default_factory=uuid4)
+    uid: str = attr(default_factory=lambda: str(uuid4()))
     how: Optional[str] = attr(default="m-g")
     time: str = attr(default_factory=isotime)
     start: str = attr(default_factory=isotime)
