@@ -20,7 +20,7 @@ class MulticastListener:
         self.observers: List[Callable[[bytes], None]] = []
 
         self.sock: socket.socket = None
-        self.pipe_r, self.pipe_w = os.pipe()
+        self.pipe_r, self.pipe_w = socket.socketpair()
 
         # create "stopped" thread
         self.processing_thread = Thread()
@@ -71,13 +71,14 @@ class MulticastListener:
     def stop(self):
         """stop publishing thread and close socket"""
 
-        if self.running:
-            self.running = False
-            os.write(self.pipe_w, b"1")
+        self.running = False
+        if self.pipe_w:
+            self.pipe_w.send(b"1")
 
         self.processing_thread.join(5)
-        os.close(self.pipe_w)
-        os.close(self.pipe_r)
+
+        self.pipe_w.close()
+        self.pipe_r.close()
         self.sock.close()
 
     def send(self, data: bytes):
@@ -103,17 +104,18 @@ class MulticastListener:
 
         def _publisher():
 
-            with self.sock as s:
+            self.running = True
 
-                self.running = True
+            with self.sock, self.pipe_r:
+
                 while self.running:
 
-                    select.select([s, self.pipe_r], [], [])
+                    select.select([self.sock, self.pipe_r], [], [])
 
                     if not self.running:
                         break
 
-                    data, server = s.recvfrom(UDP_MAX_LEN)
+                    data, server = self.sock.recvfrom(UDP_MAX_LEN)
                     self.process_observers(data, server)
 
                 self.sock.setsockopt(
@@ -122,6 +124,8 @@ class MulticastListener:
                     socket.inet_aton(self.address)
                     + socket.inet_aton(self.network_adapter),
                 )
+
+            self.running = False
 
         self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
         self.processing_thread.daemon = True

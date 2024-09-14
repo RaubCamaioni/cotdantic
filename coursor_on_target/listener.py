@@ -24,17 +24,12 @@ def print_cot(data: bytes):
         print("=" * 100)
 
 
-def error_observer(data, server):
-    raise ValueError("value error inside of observer!")
-
-
 def cot_listener():
 
     print("=" * 100)
     with MulticastListener("239.2.3.1", 6969, "0.0.0.0") as mcl:
 
         mcl.add_observer(lambda data, server: print_cot(data))
-        mcl.add_observer(error_observer)
 
         while True:
             time.sleep(30)
