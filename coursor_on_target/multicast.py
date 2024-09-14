@@ -8,6 +8,7 @@ UDP_MAX_LEN = 65507
 
 
 class SelectEvent:
+    """thread.Event signal equivalent"""
 
     def __init__(self):
         self.r, self.w = socket.socketpair()
@@ -22,6 +23,11 @@ class SelectEvent:
         if self.triggered:
             self.triggered = False
             self.r.recv(1)
+
+    def wait(self, waitable):
+        """return true if signaled to exit"""
+        readable, _, _ = select.select([waitable, self], [], [])
+        return self in readable
 
     def close(self):
         self.r.close()
@@ -39,7 +45,6 @@ class MulticastListener:
         self.address = address
         self.port = port
         self.network_adapter = network_adapter
-        self.running = False
         self.observers: List[Callable[[bytes], None]] = []
 
         self.sock: socket.socket = None
@@ -86,7 +91,6 @@ class MulticastListener:
     def stop(self):
         """stop publishing thread and close socket"""
 
-        self.running = False
         self.select_event.set()
 
         if self.processing_thread:
@@ -118,15 +122,11 @@ class MulticastListener:
 
         def _publisher():
 
-            self.running = True
-
             with self.sock:
 
-                while self.running:
+                while True:
 
-                    select.select([self.sock, self.select_event], [], [])
-
-                    if not self.running:
+                    if self.select_event.wait(self.sock):
                         break
 
                     data, server = self.sock.recvfrom(UDP_MAX_LEN)
@@ -138,8 +138,6 @@ class MulticastListener:
                     socket.inet_aton(self.address)
                     + socket.inet_aton(self.network_adapter),
                 )
-
-            self.running = False
 
         self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
         self.processing_thread.start()
