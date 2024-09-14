@@ -2,21 +2,27 @@ from typing import List, Callable, Tuple
 from threading import Thread
 import platform
 import socket
+import select
+import os
+
+UDP_MAX_LEN = 65507
 
 
 class MulticastListener:
     """binds to a multicast address and publishes messages to observers"""
 
     def __init__(self, address: str, port: int, network_adapter: str = ""):
-        """creates multicast socket for send/recv on address:port"""
+        """create multicast socket store network configuration"""
         self.address = address
         self.port = port
         self.network_adapter = network_adapter
-        self.running = True
+        self.running = False
         self.observers: List[Callable[[bytes], None]] = []
 
         self.sock: socket.socket = None
+        self.pipe_r, self.pipe_w = os.pipe()
 
+        # create "stopped" thread
         self.processing_thread = Thread()
         self.processing_thread.start()
 
@@ -30,14 +36,14 @@ class MulticastListener:
         self.observers.remove(func)
 
     def _connect(self):
-        """connects to multicast address:port on given network adapter"""
+        """join multicast group address:port:adapter and bind socket"""
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**8)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         try:
 
-            # platform dependent socket bind
             system_name = platform.system()
             if system_name == "Linux":
                 self.sock.bind((self.address, self.port))
@@ -46,7 +52,6 @@ class MulticastListener:
             else:
                 raise SystemError("unsupported system")
 
-            # join multicast group and specify sending interface (IPPROTO_IP: windows supported for multicast options)
             self.sock.setsockopt(
                 socket.IPPROTO_IP,
                 socket.IP_ADD_MEMBERSHIP,
@@ -60,8 +65,7 @@ class MulticastListener:
             )
 
         except Exception as e:
-            self.running = False
-            self.sock.close()
+            self.stop()
             return
 
     def stop(self):
@@ -69,14 +73,11 @@ class MulticastListener:
 
         if self.running:
             self.running = False
-
-            try:
-                # release socket from waiting for message
-                self.sock.sendto(b"", (self.address, self.port))
-            except socket.error as e:
-                print(f"socket close error: {e}")
+            os.write(self.pipe_w, b"1")
 
         self.processing_thread.join(5)
+        os.close(self.pipe_w)
+        os.close(self.pipe_r)
         self.sock.close()
 
     def send(self, data: bytes):
@@ -101,13 +102,19 @@ class MulticastListener:
         self._connect()
 
         def _publisher():
+
             with self.sock as s:
 
+                self.running = True
                 while self.running:
-                    data, server = s.recvfrom(65507)
 
-                    if self.running:
-                        self.process_observers(data, server)
+                    select.select([s, self.pipe_r], [], [])
+
+                    if not self.running:
+                        break
+
+                    data, server = s.recvfrom(UDP_MAX_LEN)
+                    self.process_observers(data, server)
 
                 self.sock.setsockopt(
                     socket.IPPROTO_IP,
