@@ -16,3 +16,5 @@ from .converters import (
     proto2model,
     model2proto,
 )
+
+from .server import cot_listener

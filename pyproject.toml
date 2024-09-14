@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "coursor-on-target"
-version = "0.1.0"
+version = "0.1.1"
 requires-python = ">=3.7"
 authors = [{ name="Raub Camaioni"}]
 maintainers = [{ name="Raub Camaioni"}]
@@ -15,8 +15,12 @@ keywords = ["cot", "coursor", "target"]
 
 dependencies = [
     "takproto>=3.0.0",
-    "pydantic_xml>=2.0.0"
+    "pydantic_xml>=2.0.0",
+    "lxml>=5.3.0"
 ]
 
 [project.optional-dependencies]
 testing = ["pytest>=6.2.4"]
+
+[project.scripts]
+cot-listener = "coursor_on_target:cot_listener"

@@ -1,3 +1,8 @@
+from .converters import is_xml, xml2proto, is_proto, proto2model
+from .multicast import MulticastListener
+import time
+
+
 def print_cot(data: bytes):
 
     proto = None
@@ -13,11 +18,10 @@ def print_cot(data: bytes):
         print("proto:")
         print(proto, "\n")
         print("xml:")
-        print(models.proto2model(proto).to_xml(pretty_print=True).decode())
+        print(proto2model(proto).to_xml(pretty_print=True).decode())
 
 
-if __name__ == "__main__":
-
+def cot_listener():
     print("Starting Multicast Listener: \n")
     with MulticastListener("239.2.3.1", 6969, "0.0.0.0") as mcl:
 

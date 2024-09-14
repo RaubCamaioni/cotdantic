@@ -91,11 +91,10 @@ def test_model_lossless():
 
 def test_proto_lossless():
     event_src = default_cot()
+    # takproto does not support contact.phone
+    event_src.detail.contact.phone = None
     proto = model2proto(event_src)
     event_dst = proto2model(proto)
-    print(event_src)
-    print()
-    print(event_dst)
     assert event_src == event_dst
 
 
