@@ -2,6 +2,7 @@ from .models import (
     Event,
     Point,
     Contact,
+    Group,
     Status,
     Takv,
     PrecisionLocation,
@@ -84,12 +85,18 @@ def proto2model(proto: bytes) -> Event:
     )
     pl = pl if any(pl.model_dump().values()) else None
 
+    group = Group(
+        name=proto_detail.group.name,
+        role=proto_detail.group.role,
+    )
+
     detail = Detail.from_xml(f"<detail>{proto_detail.xmlDetail}</detail>")
     if detail.contact is None:
         detail.contact = contact
     detail.status = status
     detail.takv = takv
     detail.precisionlocation = pl
+    detail.group = group
 
     event = Event(
         type=proto_event.type,

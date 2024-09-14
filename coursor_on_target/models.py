@@ -45,8 +45,8 @@ class Status(BaseXmlModel):
 
 
 class Group(BaseXmlModel):
-    name: str = element()
-    role: str = element()
+    name: str = attr()
+    role: str = attr()
 
 
 class Takv(BaseXmlModel):

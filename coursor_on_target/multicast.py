@@ -16,7 +16,6 @@ class MulticastListener:
         self.observers: List[Callable[[bytes], None]] = []
 
         self.sock: socket.socket = None
-        self._connect(self.address, self.port, self.network_adapter)
 
         self.processing_thread = Thread()
         self.processing_thread.start()
@@ -30,7 +29,7 @@ class MulticastListener:
     def remove_observer(self, func: Callable[[bytes, Tuple[str, int]], None]):
         self.observers.remove(func)
 
-    def _connect(self, address: str, port: int, network_adapter: str):
+    def _connect(self):
         """connects to multicast address:port on given network adapter"""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**8)
@@ -41,9 +40,9 @@ class MulticastListener:
             # platform dependent socket bind
             system_name = platform.system()
             if system_name == "Linux":
-                self.sock.bind((address, port))
+                self.sock.bind((self.address, self.port))
             elif system_name == "Windows":
-                self.sock.bind((network_adapter, port))
+                self.sock.bind((self.network_adapter, self.port))
             else:
                 raise SystemError("unsupported system")
 
@@ -51,12 +50,13 @@ class MulticastListener:
             self.sock.setsockopt(
                 socket.IPPROTO_IP,
                 socket.IP_ADD_MEMBERSHIP,
-                socket.inet_aton(address) + socket.inet_aton(network_adapter),
+                socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
             )
+
             self.sock.setsockopt(
                 socket.IPPROTO_IP,
                 socket.IP_MULTICAST_IF,
-                socket.inet_aton(network_adapter),
+                socket.inet_aton(self.network_adapter),
             )
 
         except Exception as e:
@@ -69,6 +69,7 @@ class MulticastListener:
 
         if self.running:
             self.running = False
+
             try:
                 # release socket from waiting for message
                 self.sock.sendto(b"", (self.address, self.port))
@@ -76,24 +77,44 @@ class MulticastListener:
                 print(f"socket close error: {e}")
 
         self.processing_thread.join(5)
+        self.sock.close()
 
     def send(self, data: bytes):
         """send bytes over multicast"""
         self.sock.sendto(data, (self.address, self.port))
 
+    def process_observers(self, data, server):
+        """process observer functions"""
+        for observer in self.observers:
+            try:
+                observer(data, server)
+            except Exception as e:
+                print(
+                    f"Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}"
+                )
+                self.remove_observer(observer)
+                continue
+
     def start(self) -> "MulticastListener":
         """start multicast publisher"""
 
+        self._connect()
+
         def _publisher():
             with self.sock as s:
+
                 while self.running:
-                    try:
-                        data, server = s.recvfrom(2**10)
-                        if self.running:
-                            [o(data, server) for o in self.observers]
-                    except Exception as e:
-                        print(f"exception processing data: {e}")
-                        continue
+                    data, server = s.recvfrom(65507)
+
+                    if self.running:
+                        self.process_observers(data, server)
+
+                self.sock.setsockopt(
+                    socket.IPPROTO_IP,
+                    socket.IP_DROP_MEMBERSHIP,
+                    socket.inet_aton(self.address)
+                    + socket.inet_aton(self.network_adapter),
+                )
 
         self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
         self.processing_thread.daemon = True

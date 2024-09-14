@@ -99,6 +99,6 @@ def test_proto_lossless():
 
 
 if __name__ == "__main__":
-    # test_xml_lossless()
-    # test_model_lossless()
+    test_xml_lossless()
+    test_model_lossless()
     test_proto_lossless()
