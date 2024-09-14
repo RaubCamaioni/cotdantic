@@ -1,11 +1,34 @@
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Union
 from threading import Thread
 import platform
 import socket
 import select
-import os
 
 UDP_MAX_LEN = 65507
+
+
+class SelectEvent:
+
+    def __init__(self):
+        self.r, self.w = socket.socketpair()
+        self.triggered = False
+
+    def set(self):
+        if not self.triggered:
+            self.triggered = True
+            self.w.send(b"1")
+
+    def clear(self):
+        if self.triggered:
+            self.triggered = False
+            self.r.recv(1)
+
+    def close(self):
+        self.r.close()
+        self.w.close()
+
+    def fileno(self):
+        return self.r.fileno()
 
 
 class MulticastListener:
@@ -20,11 +43,9 @@ class MulticastListener:
         self.observers: List[Callable[[bytes], None]] = []
 
         self.sock: socket.socket = None
-        self.pipe_r, self.pipe_w = socket.socketpair()
+        self.select_event = SelectEvent()
 
-        # create "stopped" thread
-        self.processing_thread = Thread()
-        self.processing_thread.start()
+        self.processing_thread: Union[Thread, None] = None
 
     def clear_observers(self):
         self.observers = []
@@ -42,43 +63,36 @@ class MulticastListener:
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**8)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        try:
+        system_name = platform.system()
+        if system_name == "Linux":
+            self.sock.bind((self.address, self.port))
+        elif system_name == "Windows":
+            self.sock.bind((self.network_adapter, self.port))
+        else:
+            raise SystemError("unsupported system")
 
-            system_name = platform.system()
-            if system_name == "Linux":
-                self.sock.bind((self.address, self.port))
-            elif system_name == "Windows":
-                self.sock.bind((self.network_adapter, self.port))
-            else:
-                raise SystemError("unsupported system")
+        self.sock.setsockopt(
+            socket.IPPROTO_IP,
+            socket.IP_ADD_MEMBERSHIP,
+            socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
+        )
 
-            self.sock.setsockopt(
-                socket.IPPROTO_IP,
-                socket.IP_ADD_MEMBERSHIP,
-                socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
-            )
-
-            self.sock.setsockopt(
-                socket.IPPROTO_IP,
-                socket.IP_MULTICAST_IF,
-                socket.inet_aton(self.network_adapter),
-            )
-
-        except Exception as e:
-            self.stop()
-            return
+        self.sock.setsockopt(
+            socket.IPPROTO_IP,
+            socket.IP_MULTICAST_IF,
+            socket.inet_aton(self.network_adapter),
+        )
 
     def stop(self):
         """stop publishing thread and close socket"""
 
         self.running = False
-        if self.pipe_w:
-            self.pipe_w.send(b"1")
+        self.select_event.set()
 
-        self.processing_thread.join(5)
+        if self.processing_thread:
+            self.processing_thread.join(5)
 
-        self.pipe_w.close()
-        self.pipe_r.close()
+        self.select_event.close()
         self.sock.close()
 
     def send(self, data: bytes):
@@ -106,11 +120,11 @@ class MulticastListener:
 
             self.running = True
 
-            with self.sock, self.pipe_r:
+            with self.sock:
 
                 while self.running:
 
-                    select.select([self.sock, self.pipe_r], [], [])
+                    select.select([self.sock, self.select_event], [], [])
 
                     if not self.running:
                         break
@@ -128,7 +142,6 @@ class MulticastListener:
             self.running = False
 
         self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
-        self.processing_thread.daemon = True
         self.processing_thread.start()
 
         return self
