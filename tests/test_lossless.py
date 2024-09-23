@@ -59,7 +59,7 @@ def default_cot():
     detail = Detail(
         contact=contact,
         takv=takv,
-        __group=group,
+        group=group,
         status=status,
         precisionlocation=precisionLocation,
         link=link,
