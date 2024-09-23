@@ -63,7 +63,7 @@ def default_cot():
         status=status,
         precisionlocation=precisionLocation,
         link=link,
-        uid=Alias(Droid="SpecialBoy"),
+        alias=Alias(Droid="SpecialBoy"),
     )
 
     event = Event(

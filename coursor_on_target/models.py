@@ -81,7 +81,11 @@ class Detail(BaseXmlModel, tag="detail", skip_empty=True):
     status: Optional[Status] = element(default=None)
     precisionlocation: Optional[PrecisionLocation] = element(default=None)
     link: Optional[Link] = element(default=None)
-    uid: Optional[Alias] = element(default=None)
+    alias: Optional[Alias] = element(
+        default=None,
+        validation_alias="alias",
+        serialization_alias="uid",
+    )
 
 
 class Event(BaseXmlModel, tag="event", skip_empty=True):
