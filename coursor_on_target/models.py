@@ -1,5 +1,4 @@
 from pydantic_xml import BaseXmlModel, element, attr
-from pydantic import model_validator
 from functools import partial
 from typing import Optional
 from uuid import uuid4
