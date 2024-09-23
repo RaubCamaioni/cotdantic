@@ -91,12 +91,16 @@ def proto2model(proto: bytes) -> Event:
     )
 
     detail = Detail.from_xml(f"<detail>{proto_detail.xmlDetail}</detail>")
+
     if detail.contact is None:
         detail.contact = contact
+
+    if detail.group is None:
+        detail.group = group
+
     detail.status = status
     detail.takv = takv
     detail.precisionlocation = pl
-    detail.group = group
 
     event = Event(
         type=proto_event.type,

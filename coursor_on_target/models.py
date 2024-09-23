@@ -1,4 +1,5 @@
 from pydantic_xml import BaseXmlModel, element, attr
+from pydantic import Field
 from functools import partial
 from typing import Optional
 from uuid import uuid4
@@ -73,7 +74,7 @@ class Alias(BaseXmlModel):
 class Detail(BaseXmlModel, tag="detail", skip_empty=True):
     contact: Optional[Contact] = element(default=None)
     takv: Optional[Takv] = element(default=None)
-    group: Optional[Group] = element(default=None)
+    group: Optional[Group] = element(default=None, alias="__group")
     status: Optional[Status] = element(default=None)
     precisionlocation: Optional[PrecisionLocation] = element(default=None)
     link: Optional[Link] = element(default=None)
