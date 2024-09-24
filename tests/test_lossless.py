@@ -9,8 +9,6 @@ from coursor_on_target import (
     Status,
     Link,
     PrecisionLocation,
-    model2proto,
-    proto2model,
 )
 
 
@@ -94,8 +92,8 @@ def test_proto_lossless():
     # takproto does not support contact.phone
     event_src.detail.contact.phone = None
 
-    proto = model2proto(event_src)
-    event_dst = proto2model(proto)
+    proto = bytes(event_src)
+    event_dst = Event.from_bytes(proto)
 
     assert event_src == event_dst
 
