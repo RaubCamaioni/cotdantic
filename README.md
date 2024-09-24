@@ -1,4 +1,4 @@
-# COT_PYDANTIC (cot)
+# COT_PYDANTIC
 
 Pythonic implimentation of COT generation (xml/protobuf).  
 Provides pydantic models with type completion / verification.  
