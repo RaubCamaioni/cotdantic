@@ -14,46 +14,23 @@ from coursor_on_target import (
 
 def default_cot():
 
-    point = Point(
-        lat=38.696644,
-        lon=-77.140433,
-        hae=10,
-        ce=5.0,
-        le=10.0,
-    )
-
+    point = Point(lat=38.711, lon=-77.147, hae=10, ce=5.0, le=10.0)
     contact = Contact(
-        callsign="DogMan",
-        endpoint="172.16.0.128:4242:tcp",
+        callsign="Delta1",
+        endpoint="192.168.0.100:4242:tcp",
         phone="+12223334444",
     )
-
     takv = Takv(
         device="virtual",
         platform="virtual",
         os="linux",
         version="1.0.0",
     )
-
-    group = Group(
-        name="John",
-        role="SquadLeader",
-    )
-
-    status = Status(
-        battery=50,
-    )
-
-    precisionLocation = PrecisionLocation(
-        altsrc="gps",
-        geopointsrc="m-g",
-    )
-
-    link = Link(
-        parent_callsign="Dave",
-        relation="p-l",
-    )
-
+    group = Group(name="squad_1", role="SquadLeader")
+    status = Status(battery=50)
+    precisionLocation = PrecisionLocation(altsrc="gps", geopointsrc="m-g")
+    link = Link(parent_callsign="DeltaPlatoon", relation="p-l")
+    alias = Alias(Droid="special_system")
     detail = Detail(
         contact=contact,
         takv=takv,
@@ -61,9 +38,9 @@ def default_cot():
         status=status,
         precisionlocation=precisionLocation,
         link=link,
-        alias=Alias(Droid="SpecialBoy"),
+        alias=alias,
     )
-
+    # uuid generated with python uuid4, can be given if static uuid required
     event = Event(
         type="a-f-G-U-C-I",
         point=point,
