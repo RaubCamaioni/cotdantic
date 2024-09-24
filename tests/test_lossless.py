@@ -1,4 +1,4 @@
-from coursor_on_target import (
+from cotdantic import (
     Point,
     Contact,
     Detail,

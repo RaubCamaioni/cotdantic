@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "coursor-on-target"
+name = "cotdantic"
 version = "0.1.2"
 requires-python = ">=3.7"
 authors = [{ name="Raub Camaioni"}]
 maintainers = [{ name="Raub Camaioni"}]
-description = "Pythonic coursor-on-target xml/protobuf generation"
+description = "Pythonic coursor-on-target xml/protobuf generation using pydantic"
 readme = "README.md"
 license = {file = "LICENSE"}
 keywords = ["cot", "coursor", "target"]
@@ -23,4 +23,4 @@ dependencies = [
 testing = ["pytest>=6.2.4"]
 
 [project.scripts]
-cot-listener = "coursor_on_target:cot_listener"
+cot-listener = "cotdantic:cot_listener"

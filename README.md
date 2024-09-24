@@ -1,4 +1,4 @@
-# COT_PYDANTIC
+# COTDANTIC
 
 Pythonic implimentation of COT generation (xml/protobuf).  
 Provides pydantic models with type completion / verification.  
@@ -31,7 +31,7 @@ Fields that are set to None are not encoded to XML.
 
 Creation of COT python model
 ```python
-from coursor_on_target import *
+from cotdantic import *
 from uuid import uuid4
 
 point = Point(lat=38.711, lon=-77.147, hae=10, ce=5.0, le=10.0)
