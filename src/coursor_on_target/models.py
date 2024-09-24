@@ -98,3 +98,10 @@ class Event(BaseXmlModel, tag="event", skip_empty=True):
     stale: str = attr(default_factory=partial(isotime, minutes=5))
     point: Point = element()
     detail: Optional[Detail] = element(default=None)
+
+    def __bytes__(self) -> bytes:
+        raise NotImplementedError("attached in __init__.py")
+
+    @classmethod
+    def from_bytes(cls: "Event", proto: bytes) -> "Event":
+        raise NotImplementedError("attached in __init__.py")

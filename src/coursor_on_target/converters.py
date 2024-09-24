@@ -9,6 +9,7 @@ from .models import (
     Detail,
     epoch2iso,
 )
+
 from takproto import parse_proto, xml2proto
 from pydantic_xml import BaseXmlModel
 import xml.etree.ElementTree as ET
@@ -116,6 +117,6 @@ def proto2model(proto: bytes) -> Event:
     return event
 
 
-def model2proto(model: BaseXmlModel):
+def model2proto(model: BaseXmlModel) -> bytes:
     xml = model.to_xml()
-    return xml2proto(xml)
+    return bytes(xml2proto(xml))
