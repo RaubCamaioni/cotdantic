@@ -109,9 +109,7 @@ class MulticastListener:
             try:
                 observer(data, server)
             except Exception as e:
-                print(
-                    f"Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}"
-                )
+                print(f"Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}")
                 self.remove_observer(observer)
                 continue
 
@@ -135,8 +133,7 @@ class MulticastListener:
                 self.sock.setsockopt(
                     socket.IPPROTO_IP,
                     socket.IP_DROP_MEMBERSHIP,
-                    socket.inet_aton(self.address)
-                    + socket.inet_aton(self.network_adapter),
+                    socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
                 )
 
         self.processing_thread = Thread(target=_publisher, args=(), daemon=True)

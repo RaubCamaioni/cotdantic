@@ -1,6 +1,6 @@
 from pydantic_xml import BaseXmlModel, element, attr
 from functools import partial
-from typing import Annotated, TypeVar, Generic
+from typing import TypeVar, Generic
 from typing import Optional
 from uuid import uuid4
 import datetime
