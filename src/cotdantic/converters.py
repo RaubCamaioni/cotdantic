@@ -19,6 +19,15 @@ from typing import get_args
 from takproto.proto import TakMessage
 from takproto.functions import format_time
 
+PROTO_KNOWN_ELEMENTS = {
+    "contact",
+    "group",
+    "precisionlocation",
+    "status",
+    "takv",
+    "track",
+}
+
 
 def is_xml(data: bytes) -> bool:
     try:
@@ -174,13 +183,19 @@ def model2message(model: Event) -> TakMessage:
 
     else:
         xml_string = b""
-        for name, info in detail.model_fields.items():
-            if "known" in info.metadata:
+
+        for name, _ in detail.model_fields.items():
+
+            if name in PROTO_KNOWN_ELEMENTS:
                 continue
+
             instance: BaseXmlModel = getattr(detail, name)
+
             if instance is None:
                 continue
+
             xml_string += instance.to_xml()
+
         tak_detail.xmlDetail = xml_string.decode()
 
     if detail.contact is not None:

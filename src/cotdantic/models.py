@@ -1,13 +1,9 @@
-from pydantic import AliasGenerator, BaseModel, ConfigDict
 from pydantic_xml import BaseXmlModel, element, attr
 from functools import partial
-from typing import Annotated, TypeVar, Generic, get_args, Any, Dict
+from typing import Annotated, TypeVar, Generic
 from typing import Optional
 from uuid import uuid4
 import datetime
-from pydantic_xml.element import SearchMode
-from pydantic_xml.utils import NsMap
-from takproto import parse_proto
 
 T = TypeVar("T", bound=BaseXmlModel)
 
@@ -78,14 +74,12 @@ class Alias(BaseXmlModel, tag="uid"):
 
 
 class Detail(BaseXmlModel, tag="detail", skip_empty=True):
-    contact: Annotated[Optional[Contact], "known"] = element(default=None)
-    takv: Annotated[Optional[Takv], "known"] = element(default=None)
-    group: Annotated[Optional[Group], "known"] = element(default=None)
-    status: Annotated[Optional[Status], "known"] = element(default=None)
-    track: Annotated[Optional[Track], "known"] = element(default=None)
-    precisionlocation: Annotated[Optional[PrecisionLocation], "known"] = element(
-        default=None
-    )
+    contact: Optional[Contact] = element(default=None)
+    takv: Optional[Takv] = element(default=None)
+    group: Optional[Group] = element(default=None)
+    status: Optional[Status] = element(default=None)
+    track: Optional[Track] = element(default=None)
+    precisionlocation: Optional[PrecisionLocation] = element(default=None)
     link: Optional[Link] = element(default=None)
     alias: Optional[Alias] = element(default=None)
 
