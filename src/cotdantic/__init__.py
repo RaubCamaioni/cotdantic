@@ -2,6 +2,7 @@ from .models import (
     Point,
     Contact,
     Link,
+    EventBase,
     Event,
     Detail,
     Status,
@@ -13,8 +14,7 @@ from .models import (
 )
 
 from . import converters
-
-from .listener import cot_listener
+from pydantic_xml import BaseXmlModel
 
 
 def __event_to_bytes(self: "Event") -> bytes:
@@ -23,8 +23,9 @@ def __event_to_bytes(self: "Event") -> bytes:
 
 @classmethod
 def __event_from_bytes(cls: Event, proto: bytes) -> Event:
-    return converters.proto2model(proto)
+    return converters.proto2model(cls, proto)
 
 
-Event.__bytes__ = __event_to_bytes
-Event.from_bytes = __event_from_bytes
+EventBase.__bytes__ = __event_to_bytes
+EventBase.to_bytes = __event_to_bytes
+EventBase.from_bytes = __event_from_bytes

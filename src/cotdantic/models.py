@@ -1,8 +1,15 @@
+from pydantic import AliasGenerator, BaseModel, ConfigDict
 from pydantic_xml import BaseXmlModel, element, attr
 from functools import partial
+from typing import Annotated, TypeVar, Generic, get_args, Any, Dict
 from typing import Optional
 from uuid import uuid4
 import datetime
+from pydantic_xml.element import SearchMode
+from pydantic_xml.utils import NsMap
+from takproto import parse_proto
+
+T = TypeVar("T", bound=BaseXmlModel)
 
 
 def datetime2iso(time: datetime.datetime):
@@ -35,7 +42,7 @@ class Contact(BaseXmlModel, skip_empty=True):
     phone: Optional[str] = attr(default=None)
 
 
-class Link(BaseXmlModel, skip_empty=True):
+class Link(BaseXmlModel, tag="link", skip_empty=True):
     relation: Optional[str] = attr(default=None)
     parent_callsign: Optional[str] = attr(default=None)
 
@@ -44,7 +51,7 @@ class Status(BaseXmlModel):
     battery: Optional[int] = attr(default=None)
 
 
-class Group(BaseXmlModel):
+class Group(BaseXmlModel, tag="__group"):
     name: str = attr()
     role: str = attr()
 
@@ -66,29 +73,24 @@ class PrecisionLocation(BaseXmlModel):
     altsrc: Optional[str] = attr()
 
 
-class Alias(BaseXmlModel):
+class Alias(BaseXmlModel, tag="uid"):
     Droid: Optional[str] = attr(default=None)
 
 
 class Detail(BaseXmlModel, tag="detail", skip_empty=True):
-    contact: Optional[Contact] = element(default=None)
-    takv: Optional[Takv] = element(default=None)
-    group: Optional[Group] = element(
-        default=None,
-        validation_alias="group",
-        serialization_alias="__group",
+    contact: Annotated[Optional[Contact], "known"] = element(default=None)
+    takv: Annotated[Optional[Takv], "known"] = element(default=None)
+    group: Annotated[Optional[Group], "known"] = element(default=None)
+    status: Annotated[Optional[Status], "known"] = element(default=None)
+    track: Annotated[Optional[Track], "known"] = element(default=None)
+    precisionlocation: Annotated[Optional[PrecisionLocation], "known"] = element(
+        default=None
     )
-    status: Optional[Status] = element(default=None)
-    precisionlocation: Optional[PrecisionLocation] = element(default=None)
     link: Optional[Link] = element(default=None)
-    alias: Optional[Alias] = element(
-        default=None,
-        validation_alias="alias",
-        serialization_alias="uid",
-    )
+    alias: Optional[Alias] = element(default=None)
 
 
-class Event(BaseXmlModel, tag="event", skip_empty=True):
+class EventBase(BaseXmlModel, Generic[T], tag="event", skip_empty=True):
     version: float = attr(default=2.0)
     type: str = attr()
     uid: str = attr(default_factory=lambda: str(uuid4()))
@@ -97,11 +99,21 @@ class Event(BaseXmlModel, tag="event", skip_empty=True):
     start: str = attr(default_factory=isotime)
     stale: str = attr(default_factory=partial(isotime, minutes=5))
     point: Point = element()
-    detail: Optional[Detail] = element(default=None)
+    qos: Optional[str] = attr(default=None)
+    opex: Optional[str] = attr(default=None)
+    access: Optional[str] = attr(default=None)
+    detail: Optional[T] = element(default=None)
 
     def __bytes__(self) -> bytes:
         raise NotImplementedError("attached in __init__.py")
 
-    @classmethod
-    def from_bytes(cls: "Event", proto: bytes) -> "Event":
+    def to_bytes(self) -> bytes:
         raise NotImplementedError("attached in __init__.py")
+
+    @classmethod
+    def from_bytes(cls, proto: bytes) -> "EventBase":
+        raise NotImplementedError("attached in __init__.py")
+
+
+class Event(EventBase[Detail]):
+    pass
