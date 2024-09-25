@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
-        with:
-          working-directory: ./cot_dantic
 
       - name: Setup python
         uses: actions/setup-python@v2
@@ -26,6 +24,10 @@ jobs:
       - name: Install
         run: |
           pip install -e .[testing]      
+        with:
+          working-directory: ./cot_dantic
 
       - name: Run tests
         run: pytest
+        with:
+          working-directory: ./cot_dantic
