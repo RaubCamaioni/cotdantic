@@ -60,10 +60,8 @@ detail = Detail(
     link=link,
     alias=alias,
 )
-# uuid generated with python uuid4, can be given if static uuid required
-uuid = str(uuid4())
 cot_model = Event(
-    uuid=uuid,
+    uuid=str(uuid4()),
     type="a-f-G-U-C-I",
     point=point,
     detail=detail,
@@ -105,4 +103,30 @@ cot_model2 = Event.from_bytes(proto)
 ```
 ```python
 b'\xbf\x01\xbf\x12\xbf\x02\n\x0ba-f-G-U-C-I*$3ba95f96-b621-4a37-957d-cf1a13d249370\x9c\x9c\xfa\xa6\xa228\x9c\x9c\xfa\xa6\xa22@\xfc\xc3\x8c\xa7\xa22J\x03m-gQ^\xbaI\x0c\x02[C@Y\xc5 \xb0rhIS\xc0a\x00\x00\x00\x00\x00\x00$@i\x00\x00\x00\x00\x00\x00\x14@q\x00\x00\x00\x00\x00\x00$@z\xc2\x01\nT<link relation="p-l" parent_callsign="DeltaPlatoon" /><uid Droid="special_system" />\x12 \n\x16192.168.0.100:4242:tcp\x12\x06Delta1\x1a\x16\n\x07squad_1\x12\x0bSquadLeader"\n\n\x03m-g\x12\x03gps*\x02\x0822 \n\x07virtual\x12\x07virtual\x1a\x05linux"\x051.0.0'
+```
+
+# Usage: Custom Detail
+
+The below handles custom detail tags.
+```python
+from cotdantic import *
+from typing import Optional
+
+class CustomElement(BaseXmlModel, tag="target_description"):
+    hair_color: str = attr()
+    eye_color: str = attr()
+
+class CustomDetail(Detail):
+    description: Optional[CustomElement] = element(default=None)
+
+class CustomEvent(EventBase[CustomDetail]):
+    pass
+  
+```
+Same usage schema for xml and protobuf.  
+```python
+custom_event = CustomEvent(...)
+xml = custom_event.to_xml()
+proto = bytes(custom_event)
+CustomEvent.from_bytes(proto)
 ```

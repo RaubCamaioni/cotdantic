@@ -1,15 +1,11 @@
-from cotdantic import (
-    Point,
-    Contact,
-    Detail,
-    Alias,
-    Event,
-    Takv,
-    Group,
-    Status,
-    Link,
-    PrecisionLocation,
-)
+from cotdantic import *
+from cotdantic import converters
+from takproto.functions import msg2proto
+import takproto
+import lxml.etree as ET
+
+# monkey patch XML encoder
+takproto.functions.ET = ET
 
 
 def default_cot():
@@ -31,6 +27,7 @@ def default_cot():
     precisionLocation = PrecisionLocation(altsrc="gps", geopointsrc="m-g")
     link = Link(parent_callsign="DeltaPlatoon", relation="p-l")
     alias = Alias(Droid="special_system")
+    track = Track(speed=1, course=0)
     detail = Detail(
         contact=contact,
         takv=takv,
@@ -39,8 +36,8 @@ def default_cot():
         precisionlocation=precisionLocation,
         link=link,
         alias=alias,
+        track=track,
     )
-    # uuid generated with python uuid4, can be given if static uuid required
     event = Event(
         type="a-f-G-U-C-I",
         point=point,
@@ -68,14 +65,69 @@ def test_proto_lossless():
     event_src = default_cot()
     # takproto does not support contact.phone
     event_src.detail.contact.phone = None
-
     proto = bytes(event_src)
     event_dst = Event.from_bytes(proto)
-
     assert event_src == event_dst
 
 
+def test_message_custom():
+    event_src = default_cot()
+    proto = event_src.to_bytes()
+    message = converters.model2message(event_src)
+    proto_custom = bytes(msg2proto(message))
+    assert proto == proto_custom
+
+
+def test_custom_detail():
+
+    from pydantic_xml import attr, element, BaseXmlModel
+    from typing import Optional
+
+    event_src = default_cot()
+    event_src.detail.contact.phone = None
+
+    class CustomElement(BaseXmlModel, tag="target_description"):
+        hair_color: str = attr()
+        eye_color: str = attr()
+
+    class CustomDetail(Detail):
+        description: Optional[CustomElement] = element(default=None)
+
+    class CustomEvent(EventBase[CustomDetail]):
+        pass
+
+    description = CustomElement(
+        hair_color="brown",
+        eye_color="blue",
+    )
+
+    customn_detail = CustomDetail(
+        contact=event_src.detail.contact,
+        takv=event_src.detail.takv,
+        group=event_src.detail.group,
+        status=event_src.detail.status,
+        precisionlocation=event_src.detail.precisionlocation,
+        link=event_src.detail.link,
+        alias=event_src.detail.alias,
+        track=event_src.detail.track,
+        description=description,
+    )
+
+    custom_event = CustomEvent(
+        type="a-f-G-U-C-I",
+        point=event_src.point,
+        detail=customn_detail,
+    )
+
+    proto = custom_event.to_bytes()
+    model = CustomEvent.from_bytes(proto)
+
+    assert model == custom_event
+
+
 if __name__ == "__main__":
-    test_xml_lossless()
-    test_model_lossless()
-    test_proto_lossless()
+    # test_xml_lossless()
+    # test_model_lossless()
+    # test_proto_lossless()
+    # test_message_custom()
+    test_custom_detail()
