@@ -60,10 +60,8 @@ detail = Detail(
     link=link,
     alias=alias,
 )
-# uuid generated with python uuid4, can be given if static uuid required
-uuid = str(uuid4())
 cot_model = Event(
-    uuid=uuid,
+    uuid=str(uuid4()),
     type="a-f-G-U-C-I",
     point=point,
     detail=detail,

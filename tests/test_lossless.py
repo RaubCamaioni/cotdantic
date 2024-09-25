@@ -38,7 +38,6 @@ def default_cot():
         alias=alias,
         track=track,
     )
-    # uuid generated with python uuid4, can be given if static uuid required
     event = Event(
         type="a-f-G-U-C-I",
         point=point,
