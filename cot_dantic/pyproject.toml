@@ -23,4 +23,4 @@ dependencies = [
 testing = ["pytest>=6.2.4"]
 
 [project.scripts]
-cot-listener = "cotdantic:cot_listener"
+cot-listener = "cotdantic.listener:cot_listener"

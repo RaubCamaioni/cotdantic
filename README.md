@@ -22,6 +22,9 @@ The messages are converted to human readable XML and printed to console.
 cot-listener --address 239.2.3.1 --port 6969 --interface 0.0.0.0
 ```
 
+A docker build is included for multicast docker testing.  
+For multicast to reach inside a docker network=host must be set.  
+
 # Usage: Construction
 
 Object based creation of COT model.  
