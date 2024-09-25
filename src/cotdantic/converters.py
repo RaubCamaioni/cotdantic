@@ -14,8 +14,7 @@ from .models import (
 from takproto import parse_proto, xml2proto
 from pydantic_xml import BaseXmlModel
 import xml.etree.ElementTree as ET
-from typing import Annotated, get_args
-from types import NoneType
+from typing import get_args
 
 from takproto.proto import TakMessage
 from takproto.functions import format_time
@@ -104,7 +103,7 @@ def proto2model(cls, proto: bytes) -> Event:
 
     annotation = cls.model_fields["detail"].annotation
     types_in_union = get_args(annotation)
-    custom_type = next(t for t in types_in_union if t is not NoneType)
+    custom_type = next(t for t in types_in_union if t is not None)
 
     detail = custom_type.from_xml(f"<detail>{proto_detail.xmlDetail}</detail>")
 
