@@ -24,8 +24,8 @@ jobs:
       - name: Install
         run: |
           pip install -e .[testing]      
-        working-directory: ./cot_dantic
+        working-directory: ./cotdantic
 
       - name: Run tests
         run: pytest
-        working-directory: ./cot_dantic
+        working-directory: ./cotdantic
