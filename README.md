@@ -139,7 +139,7 @@ CustomEvent.from_bytes(proto)
 
 Development of the available cot types is not comprehensive.  
 Eventually all cot types should be accessable from the following type-completing syntax.  
-```
+```python
 from cotdantic.cot_types import COT_TYPES
 print(COT_TYPES.atom.faker.air.present.military)
 ```
