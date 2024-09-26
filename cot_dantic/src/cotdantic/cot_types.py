@@ -13,9 +13,12 @@ class cot_type:
             return super().__getattribute__(attr)
         else:
             child = super().__getattribute__(attr)
-            child._chain.extend(self._chain)
-            if self._name is not None:
+            if self._name is None:
+                child._chain = []
+            else:
+                child._chain = self._chain
                 child._chain.append(self._name)
+
             return child
 
     def __str__(self):
