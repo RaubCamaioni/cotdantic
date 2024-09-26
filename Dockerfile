@@ -1,6 +1,6 @@
 FROM python:3.11-slim as build
-COPY /cotdantic /cotdantic
-RUN pip install /cotdantic
+
+RUN pip install git+https://github.com/RaubCamaioni/cot_pydantic
 
 FROM gcr.io/distroless/python3-debian12:nonroot
 
