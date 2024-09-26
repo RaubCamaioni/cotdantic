@@ -1,8 +1,8 @@
-from cotdantic import *
-from cotdantic import converters
 from takproto.functions import msg2proto
-import takproto
+from cotdantic import converters
+from cotdantic import *
 import lxml.etree as ET
+import takproto
 
 # monkey patch XML encoder
 takproto.functions.ET = ET
@@ -125,9 +125,8 @@ def test_custom_detail():
     assert model == custom_event
 
 
-if __name__ == "__main__":
-    # test_xml_lossless()
-    # test_model_lossless()
-    # test_proto_lossless()
-    # test_message_custom()
-    test_custom_detail()
+def test_cot_types():
+
+    from cotdantic.cot_types import COT_TYPES
+
+    assert str(COT_TYPES.atom.hostile.ground.present.civilian) == "a.h.G.P.C"

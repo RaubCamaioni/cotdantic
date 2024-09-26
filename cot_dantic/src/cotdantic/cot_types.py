@@ -7,17 +7,21 @@ class cot_type:
     _chain: list = field(default_factory=lambda: [])
 
     def __getattribute__(self, attr):
+
         if attr == "_name":
             return super().__getattribute__(attr)
+
         elif attr == "_chain":
             return super().__getattribute__(attr)
+
         else:
             child = super().__getattribute__(attr)
+
             if self._name is None:
                 child._chain = []
+
             else:
-                child._chain = self._chain
-                child._chain.append(self._name)
+                child._chain = self._chain + [self._name]
 
             return child
 
