@@ -73,6 +73,15 @@ class Alias(BaseXmlModel, tag="uid"):
     Droid: Optional[str] = attr(default=None)
 
 
+class Image(BaseXmlModel):
+    bytes: str
+    size: int = attr()
+    height: int = attr()
+    width: int = attr()
+    mine: str = attr(default="image/jpg")
+    type: str = attr(default="EO")
+
+
 class Detail(BaseXmlModel, tag="detail", skip_empty=True):
     contact: Optional[Contact] = element(default=None)
     takv: Optional[Takv] = element(default=None)
@@ -82,6 +91,7 @@ class Detail(BaseXmlModel, tag="detail", skip_empty=True):
     precisionlocation: Optional[PrecisionLocation] = element(default=None)
     link: Optional[Link] = element(default=None)
     alias: Optional[Alias] = element(default=None)
+    image: Optional[Image] = element(default=None)
 
 
 class EventBase(BaseXmlModel, Generic[T], tag="event", skip_empty=True):
