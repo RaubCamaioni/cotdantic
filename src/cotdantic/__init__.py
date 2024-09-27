@@ -2,15 +2,16 @@ from .models import (
     Point,
     Contact,
     Link,
-    EventBase,
-    Event,
-    Detail,
     Status,
     Group,
     Takv,
     Track,
     PrecisionLocation,
     Alias,
+    Image,
+    Detail,
+    EventBase,
+    Event,
 )
 
 from . import converters
