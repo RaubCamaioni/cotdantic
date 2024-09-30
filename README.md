@@ -11,9 +11,11 @@ Allows easy transformation between xml and protobuf.
 [pydantic_xml](https://pydantic-xml.readthedocs.io/en/latest/): Python pydantic models to XML  
 [pytak](https://pytak.readthedocs.io/en/latest/examples/): Wealth of COT/TAK format information  
 [cot_types](https://github.com/dB-SPL/cot-types): Cot type to human readable mapping  
+[MIL STD 2525](http://everyspec.com/MIL-STD/MIL-STD-2000-2999/MIL-STD-2525B_CHG-2_20725/#:~:text=These%20symbols%20are%20designed%20to%20enhance%20DOD%60s%20joint%20warfighting%20interoperability): cot type symbols
 [tak.gov](https://tak.gov/): Governing body of ATAK, Wintak, and other TAK based protocols  
 [dev_guide](https://nps.edu/documents/104517539/109705106/COT+Developer+Guide.pdf/cb125ac8-1ed1-477b-a914-7557c356a303#:~:text=What%20is%20Cursor-on-Target?%20In%20a%20nutshell,): developer outline of COT messages  
 [tak_miter](https://www.mitre.org/sites/default/files/pdf/09_4937.pdf): in-depth cot descriptions
+
 ## Common Utilities
 
 COT is sent with TCP/UDP and multicast.  
