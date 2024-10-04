@@ -64,7 +64,7 @@ class Track(BaseXmlModel):
     course: Optional[float] = attr()
 
 
-class PrecisionLocation(BaseXmlModel):
+class PrecisionLocation(BaseXmlModel, tag="precisionlocation"):
     geopointsrc: Optional[str] = attr()
     altsrc: Optional[str] = attr()
 
@@ -82,16 +82,35 @@ class Image(BaseXmlModel):
     type: str = attr(default="EO")
 
 
+class ConnectionEntry(BaseXmlModel, tag="ConnectionEntry"):
+    protocol: str = attr()
+    path: str = attr()
+    address: str = attr()
+    port: int = attr()
+    uid: str = attr()
+    alias: str = attr()
+    rover_port: int = attr(name="roverPort")
+    rtsp_reliable: int = attr(name="rtspReliable")
+    ignore_embedded_klv: bool = attr(name="ignoreEmbeddedKLV")
+    network_timout: int = attr(name="networkTimeout")
+    buffer_time: int = attr(name="bufferTime")
+
+
+class Video(BaseXmlModel, tag="__video"):
+    connection_entry: ConnectionEntry = element()
+
+
 class Detail(BaseXmlModel, tag="detail", skip_empty=True):
     contact: Optional[Contact] = element(default=None)
     takv: Optional[Takv] = element(default=None)
     group: Optional[Group] = element(default=None)
     status: Optional[Status] = element(default=None)
     track: Optional[Track] = element(default=None)
-    precisionlocation: Optional[PrecisionLocation] = element(default=None)
+    precision_location: Optional[PrecisionLocation] = element(default=None)
     link: Optional[Link] = element(default=None)
     alias: Optional[Alias] = element(default=None)
     image: Optional[Image] = element(default=None)
+    video: Optional[Video] = element(default=None)
 
 
 class EventBase(BaseXmlModel, Generic[T], tag="event", skip_empty=True):

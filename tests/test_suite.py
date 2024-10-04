@@ -24,7 +24,7 @@ def default_cot():
     )
     group = Group(name="squad_1", role="SquadLeader")
     status = Status(battery=50)
-    precisionLocation = PrecisionLocation(altsrc="gps", geopointsrc="m-g")
+    precision_location = PrecisionLocation(altsrc="gps", geopointsrc="m-g")
     link = Link(parent_callsign="DeltaPlatoon", relation="p-l")
     alias = Alias(Droid="special_system")
     track = Track(speed=1, course=0)
@@ -33,7 +33,7 @@ def default_cot():
         takv=takv,
         group=group,
         status=status,
-        precisionlocation=precisionLocation,
+        precision_location=precision_location,
         link=link,
         alias=alias,
         track=track,
@@ -72,6 +72,7 @@ def test_proto_lossless():
 
 def test_message_custom():
     event_src = default_cot()
+    event_src.detail.contact.phone = None
     proto = event_src.to_bytes()
     message = converters.model2message(event_src)
     proto_custom = bytes(msg2proto(message))
@@ -106,7 +107,7 @@ def test_custom_detail():
         takv=event_src.detail.takv,
         group=event_src.detail.group,
         status=event_src.detail.status,
-        precisionlocation=event_src.detail.precisionlocation,
+        precision_location=event_src.detail.precision_location,
         link=event_src.detail.link,
         alias=event_src.detail.alias,
         track=event_src.detail.track,

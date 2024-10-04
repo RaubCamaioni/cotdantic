@@ -22,7 +22,7 @@ from takproto.functions import format_time
 PROTO_KNOWN_ELEMENTS = {
     "contact",
     "group",
-    "precisionlocation",
+    "precision_location",
     "status",
     "takv",
     "track",
@@ -113,7 +113,6 @@ def proto2model(cls, proto: bytes) -> Event:
     annotation = cls.model_fields["detail"].annotation
     types_in_union = get_args(annotation)
     custom_type = next(t for t in types_in_union if t is not None)
-
     detail = custom_type.from_xml(f"<detail>{proto_detail.xmlDetail}</detail>")
 
     if detail.contact is None:
@@ -125,7 +124,7 @@ def proto2model(cls, proto: bytes) -> Event:
     detail.track = track
     detail.status = status
     detail.takv = takv
-    detail.precisionlocation = pl
+    detail.precision_location = pl
 
     event = cls(
         type=proto_event.type,
@@ -206,9 +205,9 @@ def model2message(model: Event) -> TakMessage:
         tak_detail.group.name = detail.group.name
         tak_detail.group.role = detail.group.role
 
-    if detail.precisionlocation is not None:
-        tak_detail.precisionLocation.geopointsrc = detail.precisionlocation.geopointsrc
-        tak_detail.precisionLocation.altsrc = detail.precisionlocation.altsrc
+    if detail.precision_location is not None:
+        tak_detail.precisionLocation.geopointsrc = detail.precision_location.geopointsrc
+        tak_detail.precisionLocation.altsrc = detail.precision_location.altsrc
 
     if detail.status is not None:
         tak_detail.status.battery = detail.status.battery

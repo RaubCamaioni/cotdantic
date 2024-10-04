@@ -1,5 +1,7 @@
 from .converters import is_xml, xml2proto, is_proto, proto2model
 from .multicast import MulticastListener
+from .models import Event
+from contextlib import ExitStack
 import time
 
 
@@ -14,7 +16,7 @@ def print_cot(data: bytes):
         proto = data
 
     if proto is not None:
-        model = proto2model(proto)
+        model = Event.from_bytes(proto)
         xml = model.to_xml()
 
         print(f"proto: bytes: {len(proto)}")
@@ -29,24 +31,37 @@ def cot_listener():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--address", type=str, default="239.2.3.1")
-    parser.add_argument("--port", type=int, default=6969)
-    parser.add_argument("--interface", type=str, default="0.0.0.0")
+    parser.add_argument("--maddress", type=str, default="239.2.3.1")
+    parser.add_argument("--mport", type=int, default=6969)
+    parser.add_argument("--minterface", type=str, default="0.0.0.0")
+    parser.add_argument("--uaddress", type=str, default="0.0.0.0")
+    parser.add_argument("--uport", type=int, default=4242)
     args = parser.parse_args()
 
-    address = args.address
-    port = args.port
-    interface = args.interface
+    maddress = args.maddress
+    mport = args.mport
+    minterface = args.minterface
+    uaddress = args.uaddress
+    uport = args.uport
 
     print("Multicast COT Listener:")
-    print(f"  address: {address}")
-    print(f"  port: {port}")
-    print(f"  interface: {interface}")
+    print(f"  address: {maddress}")
+    print(f"  port: {mport}")
+    print(f"  interface: {minterface}")
+
+    print("Unicast COT Listener:")
+    print(f"  address: {uaddress}")
+    print(f"  port: {uport}")
 
     print("=" * 100)
-    with MulticastListener(address, port, interface) as mcl:
 
-        mcl.add_observer(lambda data, server: print_cot(data))
+    with ExitStack() as stack:
+
+        multicast = stack.enter_context(MulticastListener(maddress, mport, minterface))
+        unicast = stack.enter_context(MulticastListener(uaddress, uport))
+
+        multicast.add_observer(lambda data, server: print_cot(data))
+        unicast.add_observer(lambda data, server: print_cot(data))
 
         while True:
             time.sleep(30)

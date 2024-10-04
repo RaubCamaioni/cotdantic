@@ -1,4 +1,5 @@
 from typing import List, Callable, Tuple, Union
+from ipaddress import ip_network, ip_address
 from threading import Thread
 import platform
 import socket
@@ -40,12 +41,13 @@ class SelectEvent:
 class MulticastListener:
     """binds to a multicast address and publishes messages to observers"""
 
-    def __init__(self, address: str, port: int, network_adapter: str = ""):
+    def __init__(self, address: str, port: int, network_adapter: str = "0.0.0.0"):
         """create multicast socket store network configuration"""
         self.address = address
         self.port = port
         self.network_adapter = network_adapter
         self.observers: List[Callable[[bytes], None]] = []
+        self.multicast = ip_address(self.address) in ip_network("224.0.0.0/4")
 
         self.sock: socket.socket = None
         self.select_event = SelectEvent()
@@ -68,25 +70,25 @@ class MulticastListener:
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**8)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        system_name = platform.system()
-        if system_name == "Linux":
-            self.sock.bind((self.address, self.port))
-        elif system_name == "Windows":
-            self.sock.bind((self.network_adapter, self.port))
+        if self.multicast:
+            {
+                "Linux": lambda: self.sock.bind((self.address, self.port)),
+                "Windows": lambda: self.sock.bind((self.network_adapter, self.port)),
+            }.get(platform.system(), lambda: SystemError("unsupported system"))()
+
+            self.sock.setsockopt(
+                socket.IPPROTO_IP,
+                socket.IP_ADD_MEMBERSHIP,
+                socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
+            )
+
+            self.sock.setsockopt(
+                socket.IPPROTO_IP,
+                socket.IP_MULTICAST_IF,
+                socket.inet_aton(self.network_adapter),
+            )
         else:
-            raise SystemError("unsupported system")
-
-        self.sock.setsockopt(
-            socket.IPPROTO_IP,
-            socket.IP_ADD_MEMBERSHIP,
-            socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
-        )
-
-        self.sock.setsockopt(
-            socket.IPPROTO_IP,
-            socket.IP_MULTICAST_IF,
-            socket.inet_aton(self.network_adapter),
-        )
+            self.sock.bind((self.address, self.port))
 
     def stop(self):
         """stop publishing thread and close socket"""
@@ -130,11 +132,12 @@ class MulticastListener:
                     data, server = self.sock.recvfrom(UDP_MAX_LEN)
                     self.process_observers(data, server)
 
-                self.sock.setsockopt(
-                    socket.IPPROTO_IP,
-                    socket.IP_DROP_MEMBERSHIP,
-                    socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
-                )
+                if self.multicast:
+                    self.sock.setsockopt(
+                        socket.IPPROTO_IP,
+                        socket.IP_DROP_MEMBERSHIP,
+                        socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
+                    )
 
         self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
         self.processing_thread.start()

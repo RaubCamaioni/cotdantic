@@ -54,7 +54,7 @@ takv = Takv(
 )
 group = Group(name="squad_1", role="SquadLeader")
 status = Status(battery=50)
-precisionLocation = PrecisionLocation(altsrc="gps", geopointsrc="m-g")
+precision_location = PrecisionLocation(altsrc="gps", geopointsrc="m-g")
 link = Link(parent_callsign="DeltaPlatoon", relation="p-l")
 alias = Alias(Droid="special_system")
 detail = Detail(
@@ -62,7 +62,7 @@ detail = Detail(
     takv=takv,
     group=group,
     status=status,
-    precisionlocation=precisionLocation,
+    precision_location=precision_location,
     link=link,
     alias=alias,
 )
