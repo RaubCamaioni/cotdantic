@@ -17,6 +17,8 @@ from .models import (
 from . import converters
 from pydantic_xml import BaseXmlModel
 
+from cot_types import COT_TYPES
+
 
 def __event_to_bytes(self: "Event") -> bytes:
     return converters.model2proto(self)
