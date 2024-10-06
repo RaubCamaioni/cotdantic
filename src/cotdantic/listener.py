@@ -5,7 +5,7 @@ from contextlib import ExitStack
 import time
 
 
-def print_cot(data: bytes):
+def print_cot(data: bytes, who: str):
 
     proto = None
 
@@ -19,11 +19,11 @@ def print_cot(data: bytes):
         model = Event.from_bytes(proto)
         xml = model.to_xml()
 
+        print("=" * 100 + f" {who}-captured")
         print(f"proto: bytes: {len(proto)}")
         print(proto, "\n")
         print(f"xml: bytes: {len(xml)}")
         print(model.to_xml(pretty_print=True).decode().strip())
-        print("=" * 100)
 
 
 def cot_listener():
@@ -53,15 +53,13 @@ def cot_listener():
     print(f"  address: {uaddress}")
     print(f"  port: {uport}")
 
-    print("=" * 100)
-
     with ExitStack() as stack:
 
         multicast = stack.enter_context(MulticastListener(maddress, mport, minterface))
         unicast = stack.enter_context(MulticastListener(uaddress, uport))
 
-        multicast.add_observer(lambda data, server: print_cot(data))
-        unicast.add_observer(lambda data, server: print_cot(data))
+        multicast.add_observer(lambda data, server: print_cot(data, "multicast"))
+        unicast.add_observer(lambda data, server: print_cot(data, "unicast"))
 
         while True:
             time.sleep(30)
