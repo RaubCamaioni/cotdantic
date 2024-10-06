@@ -24,8 +24,7 @@ jobs:
           architecture: x64
 
       - name: Install
-        run: |
-          pip install -e .[testing]      
+        run: pip install -e .[testing]      
 
       - name: Run tests
         run: pytest
@@ -52,16 +51,18 @@ jobs:
           architecture: x64
 
       - name: Install pypa/build
-        run: python -m pip install build 
+        run: pip install build
 
       - name: Build wheel and source
-        run: python3 -m build
+        run: |
+          mkdir -p dist/${{ matrix.os }}-${{ matrix.python-version }}
+          python -m build --outdir dist/${{ matrix.os }}-${{ matrix.python-version }}
       
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: python-package-distributions
-          path: dist/
+          name: python-package-distributions-${{ matrix.os }}-${{ matrix.python-version }}
+          path: dist/${{ matrix.os }}-${{ matrix.python-version }}
 
   publish-to-testpypi:
     name: Publish to TestPyPI
