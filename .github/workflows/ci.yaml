@@ -3,6 +3,7 @@ name: CI
 on: [pull_request, push, workflow_dispatch]
 
 jobs:
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -27,3 +28,52 @@ jobs:
 
       - name: Run tests
         run: pytest
+
+  build:
+    needs:
+    - test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ["ubuntu-latest", "windows-latest"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - name: Install pypa/build
+            run: >-
+              python3 -m
+              pip install
+              build
+              --user
+      - name: Build a binary wheel and a source tarball
+      run: python3 -m build
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish-to-testpypi:
+    name: Publish to TestPyPI
+    needs:
+    - build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/mountain96
+
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
