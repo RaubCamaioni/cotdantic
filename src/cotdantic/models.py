@@ -114,14 +114,14 @@ class Detail(BaseXmlModel, tag="detail", skip_empty=True):
 
 
 class EventBase(BaseXmlModel, Generic[T], tag="event", skip_empty=True):
-    version: float = attr(default=2.0)
     type: str = attr()
+    point: Point = element()
+    version: float = attr(default=2.0)
     uid: str = attr(default_factory=lambda: str(uuid4()))
     how: Optional[str] = attr(default="m-g")
     time: str = attr(default_factory=isotime)
     start: str = attr(default_factory=isotime)
     stale: str = attr(default_factory=partial(isotime, minutes=5))
-    point: Point = element()
     qos: Optional[str] = attr(default=None)
     opex: Optional[str] = attr(default=None)
     access: Optional[str] = attr(default=None)
