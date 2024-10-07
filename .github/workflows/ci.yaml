@@ -88,8 +88,8 @@ jobs:
       - name: Download all the dists
         uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions-*
-          path: dist/
+          name: python-package-distributions-${{ matrix.os }}-${{ matrix.python-version }}
+          path: dist/${{ matrix.os }}-${{ matrix.python-version }}
           
       - name: Publish to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
