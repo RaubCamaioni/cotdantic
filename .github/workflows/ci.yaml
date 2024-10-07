@@ -32,50 +32,33 @@ jobs:
   build:
     needs:
     - test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: ["ubuntu-latest", "windows-latest"]
-        # python-version: ["3.8", "3.9", "3.10", "3.11"]
-        python-version: ["3.8"]
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Setup python
-        uses: actions/setup-python@v2
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          architecture: x64
+          python-version: "3.x"
 
       - name: Install pypa/build
         run: pip install build
 
       - name: Build wheel and source
-        run: |
-          mkdir -p dist/${{ matrix.os }}-${{ matrix.python-version }}
-          python -m build --outdir dist/${{ matrix.os }}-${{ matrix.python-version }}
+        run: python3 -m build
       
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: python-package-distributions-${{ matrix.os }}-${{ matrix.python-version }}
-          path: dist/${{ matrix.os }}-${{ matrix.python-version }}
+          name: python-package-distributions
+          path: dist/
 
   publish-to-testpypi:
     name: Publish to TestPyPI
     needs:
     - build
     runs-on: ubuntu-latest
-    
-    strategy:
-      fail-fast: true
-      matrix:
-        os: ["ubuntu-latest", "windows-latest"]
-        # python-version: ["3.8", "3.9", "3.10", "3.11"]
-        python-version: ["3.8"]
 
     environment:
       name: testpypi
@@ -88,8 +71,8 @@ jobs:
       - name: Download all the dists
         uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions-${{ matrix.os }}-${{ matrix.python-version }}
-          path: dist/${{ matrix.os }}-${{ matrix.python-version }}
+          name: python-package-distributions
+          path: dist/
           
       - name: Publish to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
