@@ -79,7 +79,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/mountain96
+      url: https://test.pypi.org/p/cotdantic
 
     permissions:
       id-token: write
