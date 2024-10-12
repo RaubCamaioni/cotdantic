@@ -1,0 +1,18 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 0.6.9
+    hooks:
+    -   id: ruff
+-   repo: local
+    hooks:
+    -   id: increment-build-number
+        name: Increment Build Number
+        entry: python .pre-commit-scripts/increment_version.py  # Path to your script
+        language: system
+        types: [python]

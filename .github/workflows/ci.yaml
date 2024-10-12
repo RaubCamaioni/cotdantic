@@ -11,20 +11,16 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
         python-version: ["3.8", "3.9", "3.10", "3.11"]
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
-
       - name: Setup python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
-
       - name: Install
         run: pip install -e .[testing]      
-
       - name: Run tests
         run: pytest
 
@@ -35,34 +31,49 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-
       - name: Install pypa/build
         run: pip install build
-
       - name: Build wheel and source
         run: python3 -m build
-      
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
           path: dist/
 
+  publish-to-pypi:
+    name: Publish to PyPI
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/<package-name>
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
   publish-to-testpypi:
     name: Publish to TestPyPI
     needs:
     - build
     runs-on: ubuntu-latest
-
     environment:
       name: testpypi
       url: https://test.pypi.org/p/cotdantic
-
     permissions:
       id-token: write
 
@@ -72,7 +83,6 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
-          
       - name: Publish to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
