@@ -195,6 +195,16 @@ class vehicle_type(cot_type):
 
 
 @dataclass
+class combat_status(cot_type):
+	infantry = basic_type('I')
+
+
+@dataclass
+class unit_status(cot_type):
+	combat = combat_status('C')
+
+
+@dataclass
 class status(cot_type):
 	# wintak air
 	civilian = flight_type('C')
@@ -203,7 +213,7 @@ class status(cot_type):
 	# wintak ground
 	equipment = equipment('E')
 	installation = basic_type('I')
-	units = basic_type('U')
+	unit = unit_status('U')
 	# wintak sea
 	combatant = basic_type('C')
 	noncombatant = basic_type('N')
@@ -232,33 +242,33 @@ class status(cot_type):
 	underwater_weapon = basic_type('U-W')
 
 
-@dataclass
-class dimension(cot_type):
-	# wintak
-	none = status('')
-	# extras
-	present = status('P')
-	anticipated = status('A')
-	hq_present = status('H')
-	hq_planned = status('Q')
-	support = status('S')
+# @dataclass
+# class dimension(cot_type):
+# 	# wintak
+# 	none = status('')
+# 	# extras
+# 	present = status('P')
+# 	anticipated = status('A')
+# 	hq_present = status('H')
+# 	hq_planned = status('Q')
+# 	support = status('S')
 
 
 @dataclass
 class affiliation(cot_type):
 	# wintak
-	air = dimension('A')
-	ground = dimension('G')
-	sea = dimension('S')
-	space = dimension('O')
-	sof = dimension('F')
-	subsurface = dimension('U')
+	air = status('A')
+	ground = status('G')
+	sea = status('S')
+	space = status('O')
+	sof = status('F')
+	subsurface = status('U')
 	# extras
-	other = dimension('X')
+	other = status('X')
 
 
 @dataclass
-class atom(cot_type):
+class _atom(cot_type):
 	# wintak
 	unknown = affiliation('u')
 	friend = affiliation('f')
@@ -274,16 +284,4 @@ class atom(cot_type):
 	pending = affiliation('p')
 
 
-@dataclass
-class bit(cot_type):
-	""""""
-
-
-@dataclass
-class cot_types(cot_type):
-	_name: str = None
-	atom = atom('a')
-	bit = bit('b')
-
-
-COT_TYPES = cot_types()
+atom = _atom('a')

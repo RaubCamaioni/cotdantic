@@ -126,6 +126,4 @@ def test_custom_detail():
 
 
 def test_cot_types():
-	from cotdantic.cot_types import COT_TYPES
-
-	assert COT_TYPES.atom.hostile.ground.present.civilian.gen() == 'a-h-G-P-C'
+	assert str(atom.hostile.ground.civilian) == 'a-h-G-C'

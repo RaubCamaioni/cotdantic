@@ -17,7 +17,7 @@ from .models import (
 )
 
 from . import converters
-from .cot_types import COT_TYPES
+from .cot_types import atom
 from pydantic_xml import BaseXmlModel
 
 
