@@ -4,8 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cotdantic"
-version = "1.0.0"
-build_number = "1"
+dynamic = ["version"]
 requires-python = ">=3.7"
 description = "Pythonic coursor-on-target xml/protobuf generation using pydantic"
 readme = "README.md"
@@ -13,6 +12,9 @@ keywords = [ "cot", "coursor", "target",]
 dependencies = [ "takproto>=3.0.0", "pydantic_xml>=2.0.0", "lxml>=5.3.0", "toml",]
 [[project.authors]]
 name = "Raub Camaioni"
+
+[tool.setuptools.dynamic]
+version = {attr = "package.__version__"}
 
 [[project.maintainers]]
 name = "Raub Camaioni"
