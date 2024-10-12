@@ -1,33 +1,35 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = [ "setuptools>=61.0",]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "cotdantic"
 version = "1.0.0"
+build_number = "1"
 requires-python = ">=3.7"
-authors = [{ name="Raub Camaioni"}]
-maintainers = [{ name="Raub Camaioni"}]
 description = "Pythonic coursor-on-target xml/protobuf generation using pydantic"
 readme = "README.md"
-license = {file = "LICENSE"}
-keywords = ["cot", "coursor", "target"]
+keywords = [ "cot", "coursor", "target",]
+dependencies = [ "takproto>=3.0.0", "pydantic_xml>=2.0.0", "lxml>=5.3.0", "toml",]
+[[project.authors]]
+name = "Raub Camaioni"
 
-dependencies = [
-    "takproto>=3.0.0",
-    "pydantic_xml>=2.0.0",
-    "lxml>=5.3.0"
-]
+[[project.maintainers]]
+name = "Raub Camaioni"
+
+[project.license]
+file = "LICENSE"
 
 [project.optional-dependencies]
-testing = ["pytest>=6.2.4"]
-dev = ["pytest>=6.2.4", "pre-commit"]
+testing = [ "pytest>=6.2.4",]
+dev = [ "pytest>=6.2.4", "pre-commit",]
 
 [project.scripts]
 cot-listener = "cotdantic.listener:cot_listener"
 
 [tool.ruff]
 line-length = 100
+ignore = [ "F403", "F405", "F401",]
 
 [tool.ruff.format]
 quote-style = "single"
