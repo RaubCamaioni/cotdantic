@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/<package-name>
+      url: https://pypi.org/p/cotdantic
     permissions:
       id-token: write
 
