@@ -1,4 +1,4 @@
-__version__ = '1.0.2.1'
+__version__ = '1.0.2.2'
 
 from .models import (
 	Point,
