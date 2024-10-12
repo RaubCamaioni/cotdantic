@@ -14,7 +14,7 @@ dependencies = [ "takproto>=3.0.0", "pydantic_xml>=2.0.0", "lxml>=5.3.0", "toml"
 name = "Raub Camaioni"
 
 [tool.setuptools.dynamic]
-version = {attr = "package.__version__"}
+version = {attr = "cotdantic.__version__"}
 
 [[project.maintainers]]
 name = "Raub Camaioni"
