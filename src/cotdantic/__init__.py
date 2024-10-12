@@ -1,3 +1,5 @@
+__version__ = '1.0.1'
+
 from .models import (
 	Point,
 	Contact,
