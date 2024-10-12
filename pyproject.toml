@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cotdantic"
 dynamic = ["version"]
+urls = {Homepage = "https://github.com/RaubCamaioni/cotdantic"}
 requires-python = ">=3.7"
 description = "Pythonic coursor-on-target xml/protobuf generation using pydantic"
 readme = "README.md"
