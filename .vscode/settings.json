@@ -1,7 +1,5 @@
 {
-    "black-formatter.args": [
-        "--line-length=120"
-    ],
-    "flake8.importStrategy": "fromEnvironment",
-    "pylint.importStrategy": "fromEnvironment"
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "python.languageServer": "ruff",
+    "ruff.lineLength": 120
 }

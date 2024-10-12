@@ -1,17 +1,17 @@
 from .models import (
-    Point,
-    Contact,
-    Link,
-    Status,
-    Group,
-    Takv,
-    Track,
-    PrecisionLocation,
-    Alias,
-    Image,
-    Detail,
-    EventBase,
-    Event,
+	Point,
+	Contact,
+	Link,
+	Status,
+	Group,
+	Takv,
+	Track,
+	PrecisionLocation,
+	Alias,
+	Image,
+	Detail,
+	EventBase,
+	Event,
 )
 
 from . import converters
@@ -19,13 +19,13 @@ from .cot_types import COT_TYPES
 from pydantic_xml import BaseXmlModel
 
 
-def __event_to_bytes(self: "Event") -> bytes:
-    return converters.model2proto(self)
+def __event_to_bytes(self: 'Event') -> bytes:
+	return converters.model2proto(self)
 
 
 @classmethod
 def __event_from_bytes(cls: Event, proto: bytes) -> Event:
-    return converters.proto2model(cls, proto)
+	return converters.proto2model(cls, proto)
 
 
 EventBase.__bytes__ = __event_to_bytes
