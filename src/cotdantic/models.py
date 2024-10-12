@@ -139,4 +139,4 @@ class EventBase(BaseXmlModel, Generic[T], tag='event', skip_empty=True):
 
 
 class Event(EventBase[Detail]):
-	pass
+	""""""

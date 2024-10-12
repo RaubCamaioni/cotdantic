@@ -87,6 +87,7 @@ class MulticastListener:
 				socket.IP_MULTICAST_IF,
 				socket.inet_aton(self.network_adapter),
 			)
+
 		else:
 			self.sock.bind((self.address, self.port))
 
