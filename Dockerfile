@@ -1,9 +1,6 @@
-FROM python:3.11-slim as build
+FROM python:3.11-slim AS build
 
-RUN apt-get update && apt-get install -y \
-    git
-
-RUN pip install git+https://github.com/RaubCamaioni/cot_pydantic
+RUN pip install cotdantic
 
 FROM gcr.io/distroless/python3-debian12:nonroot
 

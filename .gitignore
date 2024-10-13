@@ -5,3 +5,4 @@ dist/
 __pycache__/
 local/
 .pytest_cache/
+.ruff_cache
