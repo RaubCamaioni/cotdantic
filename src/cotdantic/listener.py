@@ -1,4 +1,4 @@
-from .converters import is_xml, xml2proto, is_proto, proto2model
+from .converters import is_xml, xml2proto, is_proto
 from .multicast import MulticastListener
 from .models import Event
 from contextlib import ExitStack

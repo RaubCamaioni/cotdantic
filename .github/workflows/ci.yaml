@@ -67,6 +67,7 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
 
   publish-to-testpypi:
+    if: contains(github.event.head_commit.message, 'testpypi')
     name: Publish to TestPyPI
     needs:
     - build
