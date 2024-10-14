@@ -1,4 +1,4 @@
-__version__ = '1.0.2.2'
+__version__ = '1.0.3.0'
 
 from .models import (
 	Point,
@@ -21,12 +21,12 @@ from .cot_types import atom
 from pydantic_xml import BaseXmlModel
 
 
-def __event_to_bytes(self: 'Event') -> bytes:
+def __event_to_bytes(self: EventBase) -> bytes:
 	return converters.model2proto(self)
 
 
 @classmethod
-def __event_from_bytes(cls: Event, proto: bytes) -> Event:
+def __event_from_bytes(cls: EventBase, proto: bytes) -> EventBase:
 	return converters.proto2model(cls, proto)
 
 

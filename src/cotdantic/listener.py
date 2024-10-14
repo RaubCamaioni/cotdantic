@@ -11,16 +11,25 @@ def print_cot(data: bytes, who: str):
 	if is_xml(data):
 		proto = xml2proto(data)
 
+	proto2 = None
 	if is_proto(data):
 		proto = data
+		model = Event.from_bytes(proto)
+		proto2 = model.to_bytes()
 
 	if proto is not None:
 		model = Event.from_bytes(proto)
 		xml = model.to_xml()
 
 		print('=' * 100 + f' {who}-captured')
+
+		if proto2 is not None and proto != proto2:
+			print(f'WARNING: proto and reconstruction not identical: bytes: {len(proto2)}')
+			print(proto2, '\n')
+
 		print(f'proto: bytes: {len(proto)}')
 		print(proto, '\n')
+
 		print(f'xml: bytes: {len(xml)}')
 		print(model.to_xml(pretty_print=True).decode().strip())
 

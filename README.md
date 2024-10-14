@@ -121,6 +121,13 @@ proto = bytes(custom_event)
 CustomEvent.from_bytes(proto)
 ```
 
+## Raw XML (not fully supported)
+The protobuf xml detail string is stored in Detail.raw_xml.  
+This attribute can be used to capture xml tags not defined in Detail.  
+Eventually, this will also capture unknown tags from xml messages.  
+The raw_xml will be optionally added back to xml/protobuf encoding.  
+
+
 ## Cot Types
 
 Development of the available cot types is not comprehensive.  

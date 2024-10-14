@@ -2,6 +2,7 @@ from typing import List, Callable, Tuple, Union
 from ipaddress import ip_network, ip_address
 from threading import Thread
 import platform
+import traceback
 import socket
 import select
 
@@ -113,6 +114,7 @@ class MulticastListener:
 				observer(data, server)
 			except Exception as e:
 				print(f'Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}')
+				traceback.print_exc()
 				self.remove_observer(observer)
 				continue
 

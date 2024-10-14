@@ -1,4 +1,5 @@
-from pydantic_xml import BaseXmlModel, element, attr
+from pydantic_xml import BaseXmlModel, element, attr, computed_attr
+from pydantic import Field
 from functools import partial
 from typing import TypeVar, Generic
 from typing import Optional
@@ -27,7 +28,7 @@ def epoch2iso(epoch: int):
 class Point(BaseXmlModel, skip_empty=True):
 	lat: float = attr()
 	lon: float = attr()
-	hae: float = attr(default=0)
+	hae: float = attr(default=999999)
 	le: float = attr(default=999999)
 	ce: float = attr(default=999999)
 
@@ -48,8 +49,8 @@ class Status(BaseXmlModel):
 
 
 class Group(BaseXmlModel, tag='__group'):
-	name: str = attr()
-	role: str = attr()
+	name: Optional[str] = attr()
+	role: Optional[str] = attr()
 
 
 class Takv(BaseXmlModel):
@@ -101,6 +102,7 @@ class Video(BaseXmlModel, tag='__video'):
 
 
 class Detail(BaseXmlModel, tag='detail', skip_empty=True):
+	raw_xml: str = Field(exclude=True, default='')
 	contact: Optional[Contact] = element(default=None)
 	takv: Optional[Takv] = element(default=None)
 	group: Optional[Group] = element(default=None)
@@ -134,7 +136,7 @@ class EventBase(BaseXmlModel, Generic[T], tag='event', skip_empty=True):
 		raise NotImplementedError('attached in __init__.py')
 
 	@classmethod
-	def from_bytes(cls, proto: bytes) -> 'EventBase':
+	def from_bytes(cls, proto: bytes) -> 'EventBase[T]':
 		raise NotImplementedError('attached in __init__.py')
 
 

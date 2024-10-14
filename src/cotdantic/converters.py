@@ -1,4 +1,5 @@
 from .models import (
+	EventBase,
 	Event,
 	Point,
 	Contact,
@@ -11,13 +12,13 @@ from .models import (
 	epoch2iso,
 )
 
-from takproto import parse_proto, xml2proto
 from pydantic_xml import BaseXmlModel
 import xml.etree.ElementTree as ET
 from typing import get_args
 
+from takproto import parse_proto, xml2proto
 from takproto.proto import TakMessage
-from takproto.functions import format_time
+from takproto.functions import format_time, msg2proto
 
 PROTO_KNOWN_ELEMENTS = {
 	'contact',
@@ -26,6 +27,7 @@ PROTO_KNOWN_ELEMENTS = {
 	'status',
 	'takv',
 	'track',
+	'raw_xml',  # do not encode
 }
 
 
@@ -55,7 +57,7 @@ def parse_cot(data):
 	return False, None
 
 
-def proto2model(cls, proto: bytes) -> Event:
+def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	proto_message = parse_proto(proto)
 	proto_event = proto_message.cotEvent
 	proto_detail = proto_event.detail
@@ -72,59 +74,70 @@ def proto2model(cls, proto: bytes) -> Event:
 		ce=proto_event.ce,
 	)
 
-	contact = Contact(
-		callsign=proto_contact.callsign,
-		endpoint=proto_contact.endpoint,
-	)
-	contact = contact if any(contact.model_dump().values()) else None
+	contact = None
+	if proto_detail.HasField('contact'):
+		contact = Contact(
+			callsign=proto_contact.callsign or None,
+			endpoint=proto_contact.endpoint or None,
+		)
 
-	status = Status(
-		battery=proto_status.battery or None,
-	)
-	status = status if any(status.model_dump().values()) else None
+	status = None
+	if proto_detail.HasField('status'):
+		status = Status(
+			battery=proto_status.battery or None,
+		)
 
-	takv = Takv(
-		device=proto_takv.device or None,
-		platform=proto_takv.platform or None,
-		os=proto_takv.os or None,
-		version=proto_takv.version or None,
-	)
-	takv = takv if any(takv.model_dump().values()) else None
+	group = None
+	if proto_detail.HasField('group'):
+		group = Group(
+			name=proto_detail.group.name or None,
+			role=proto_detail.group.role or None,
+		)
 
-	pl = PrecisionLocation(
-		geopointsrc=proto_pl.geopointsrc or None,
-		altsrc=proto_pl.altsrc or None,
-	)
-	pl = pl if any(pl.model_dump().values()) else None
+	takv = None
+	if proto_detail.HasField('takv'):
+		takv = Takv(
+			device=proto_takv.device or None,
+			platform=proto_takv.platform or None,
+			os=proto_takv.os or None,
+			version=proto_takv.version or None,
+		)
 
-	group = Group(
-		name=proto_detail.group.name,
-		role=proto_detail.group.role,
-	)
+	pl = None
+	if proto_detail.HasField('precisionLocation'):
+		pl = PrecisionLocation(
+			geopointsrc=proto_pl.geopointsrc or None,
+			altsrc=proto_pl.altsrc or None,
+		)
 
-	track = Track(
-		speed=proto_detail.track.speed,
-		course=proto_detail.track.course,
-	)
+	track = None
+	if proto_detail.HasField('track'):
+		track = Track(
+			speed=proto_detail.track.speed,
+			course=proto_detail.track.course,
+		)
 
 	annotation = cls.model_fields['detail'].annotation
 	types_in_union = get_args(annotation)
 	custom_type = next(t for t in types_in_union if t is not None)
-	detail = custom_type.from_xml(f'<detail>{proto_detail.xmlDetail}</detail>')
 
-	if detail.contact is None:
-		detail.contact = contact
-
-	if detail.group is None:
-		detail.group = group
-
+	raw_xml = f'<detail>{proto_detail.xmlDetail}</detail>'
+	detail: Detail = custom_type.from_xml(raw_xml)
+	detail.contact = detail.contact or contact
+	detail.group = detail.group or group
 	detail.track = track
 	detail.status = status
 	detail.takv = takv
 	detail.precision_location = pl
 
+	# TODO: add only xml that is not captured and add back to proto
+	detail.raw_xml = raw_xml
+
 	event = cls(
 		type=proto_event.type,
+		access=proto_event.access or None,
+		qos=proto_event.qos or None,
+		opex=proto_event.opex or None,
 		uid=proto_event.uid,
 		how=proto_event.how,
 		time=epoch2iso(proto_event.sendTime),
@@ -137,12 +150,20 @@ def proto2model(cls, proto: bytes) -> Event:
 	return event
 
 
-def model2proto(model: BaseXmlModel) -> bytes:
+def model2xml2proto(model: EventBase):
 	xml = model.to_xml()
 	return bytes(xml2proto(xml))
 
 
-def model2message(model: Event) -> TakMessage:
+def model2proto(model: EventBase) -> bytes:
+	message = model2message(model)
+	message.takControl.minProtoVersion = 0
+	message.takControl.maxProtoVersion = 0
+	message.takControl.contactUid = ''
+	return bytes(msg2proto(message, None))
+
+
+def model2message(model: EventBase) -> TakMessage:
 	tak_message = TakMessage()
 
 	geo_chat = 'GeoChat.' in model.uid
@@ -193,12 +214,12 @@ def model2message(model: Event) -> TakMessage:
 		tak_detail.xmlDetail = xml_string.decode()
 
 	if detail.contact is not None:
-		tak_detail.contact.endpoint = detail.contact.endpoint
-		tak_detail.contact.callsign = detail.contact.callsign
+		tak_detail.contact.endpoint = detail.contact.endpoint or ''
+		tak_detail.contact.callsign = detail.contact.callsign or ''
 
 	if detail.group is not None:
-		tak_detail.group.name = detail.group.name
-		tak_detail.group.role = detail.group.role
+		tak_detail.group.name = detail.group.name or ''
+		tak_detail.group.role = detail.group.role or ''
 
 	if detail.precision_location is not None:
 		tak_detail.precisionLocation.geopointsrc = detail.precision_location.geopointsrc

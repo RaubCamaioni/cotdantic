@@ -3,6 +3,7 @@ from cotdantic import converters
 from cotdantic import *
 import lxml.etree as ET
 import takproto
+import pytest
 
 # monkey patch XML encoder
 takproto.functions.ET = ET
@@ -67,16 +68,27 @@ def test_proto_lossless():
 	event_src.detail.contact.phone = None
 	proto = bytes(event_src)
 	event_dst = Event.from_bytes(proto)
+	# don't compair raw_xml
+	event_src.detail.raw_xml = ''
+	event_dst.detail.raw_xml = ''
 	assert event_src == event_dst
 
 
+@pytest.mark.skip(reason='takproto does not copy takcontrol to proto')
 def test_message_custom():
+	from takproto.constants import TAKProtoVer
+
 	event_src = default_cot()
 	event_src.detail.contact.phone = None
-	proto = event_src.to_bytes()
-	message = converters.model2message(event_src)
-	proto_custom = bytes(msg2proto(message))
-	assert proto == proto_custom
+
+	# direct method
+	direct_proto = event_src.to_bytes()
+
+	# xml method
+	xml = event_src.to_xml()
+	xml_proto = bytes(converters.xml2proto(xml, TAKProtoVer.MESH))
+
+	assert direct_proto == xml_proto
 
 
 def test_custom_detail():
@@ -121,6 +133,9 @@ def test_custom_detail():
 
 	proto = custom_event.to_bytes()
 	model = CustomEvent.from_bytes(proto)
+
+	model.detail.raw_xml = ''
+	custom_event.detail.raw_xml = ''
 
 	assert model == custom_event
 
