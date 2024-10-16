@@ -7,10 +7,15 @@ import platform
 import time
 import uuid
 from threading import Lock
+from typing import Tuple
 
 print_lock = Lock()
 
-def print_cot(data: bytes, who: str):
+def print_cot(data: bytes, server: Tuple[str, int], who: str = "unknown", source: str = None):
+
+	if source and server[0] != source:
+		return 
+
 	with print_lock:
 
 		xml_original = None
@@ -79,6 +84,7 @@ def cot_listener():
 	parser.add_argument('--ginterface', type=str, default='0.0.0.0')
 	parser.add_argument('--uaddress', type=str, default='0.0.0.0')
 	parser.add_argument('--uport', type=int, default=4242)
+	parser.add_argument('--source', type=str, default=None)
 	args = parser.parse_args()
 
 	maddress = args.maddress
@@ -89,17 +95,19 @@ def cot_listener():
 	gaddress = args.gaddress
 	gport = args.gport
 	ginterface = args.ginterface
+	source = args.source
 
 	event = cot(uaddress, uport)
 
 	with ExitStack() as stack:
+		
 		multicast = stack.enter_context(MulticastListener(maddress, mport, minterface))
-		group_chat = stack.enter_context(MulticastListener(gaddress, gport, ginterface))
+		# group_chat = stack.enter_context(MulticastListener(gaddress, gport, ginterface))
 		# unicast = stack.enter_context(MulticastListener(uaddress, uport))
 
-		multicast.add_observer(lambda data, server: print_cot(data, 'multicast'))
-		group_chat.add_observer(lambda data, server: print_cot(data, 'groupchat'))
-		# unicast.add_observer(lambda data, server: print_cot(data, 'unicast'))
+		multicast.add_observer(partial(print_cot, who='multicast', source=source))
+		# group_chat.add_observer(partial(print_cot, who='groupchat', source=source))
+		# unicast.add_observer(partial(print_cot, who='unicast', source=source))
 
 		while True:
 			event.time = isotime()
