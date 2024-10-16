@@ -79,8 +79,8 @@ class Track(BaseXmlModel, tag='track'):
 
 
 class PrecisionLocation(BaseXmlModel, tag='precisionlocation'):
-	geopointsrc: Optional[str] = attr()
-	altsrc: Optional[str] = attr()
+	geopointsrc: Optional[str] = attr(default=None)
+	altsrc: Optional[str] = attr(default=None)
 
 
 class Alias(BaseXmlModel, tag='uid'):
@@ -134,7 +134,7 @@ class Video(BaseXmlModel, tag='__video'):
 
 
 class Remarks(BaseXmlModel, tag='remarks'):
-	text: str
+	text: Optional[str] = None
 	source: Optional[str] = attr(default=None)
 	source_id: Optional[str] = attr(name='sourceID', default=None)
 	to: Optional[str] = attr(default=None)

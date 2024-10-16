@@ -95,11 +95,11 @@ def cot_listener():
 	with ExitStack() as stack:
 		multicast = stack.enter_context(MulticastListener(maddress, mport, minterface))
 		group_chat = stack.enter_context(MulticastListener(gaddress, gport, ginterface))
-		unicast = stack.enter_context(MulticastListener(uaddress, uport))
+		# unicast = stack.enter_context(MulticastListener(uaddress, uport))
 
 		multicast.add_observer(lambda data, server: print_cot(data, 'multicast'))
 		group_chat.add_observer(lambda data, server: print_cot(data, 'groupchat'))
-		unicast.add_observer(lambda data, server: print_cot(data, 'unicast'))
+		# unicast.add_observer(lambda data, server: print_cot(data, 'unicast'))
 
 		while True:
 			event.time = isotime()
