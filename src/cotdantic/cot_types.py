@@ -61,6 +61,7 @@ class size(cot_type):
 	light = size_type('L')
 	medium = size_type('M')
 	heavy = size_type('H')
+	recoilless = size_type('R')
 
 
 @dataclass
@@ -131,6 +132,10 @@ class flight_type(cot_type):
 
 @dataclass
 class sam(cot_type):
+	ballistic = basic_type('B')
+	air = basic_type('S')
+	subsurface = basic_type('U')
+	surface = basic_type('S')
 	fixed_site = basic_type('f')
 	manpad = basic_type('i')
 	mobile = basic_type('m')
@@ -145,6 +150,8 @@ class missile_target(cot_type):
 @dataclass
 class missile_launch(cot_type):
 	air = missile_target('A')
+	ballistic = basic_type('B')
+	cruise = basic_type('C-M')
 	surface = sam('S')
 	attack = basic_type('L')
 	subsurface = basic_type('U')
@@ -152,6 +159,7 @@ class missile_launch(cot_type):
 
 @dataclass
 class weapon(cot_type):
+	bomb = basic_type('B')
 	decoy = basic_type('D')
 	missile = missile_launch('M')
 
@@ -163,8 +171,61 @@ class sensor(cot_type):
 
 
 @dataclass
+class mines(cot_type):
+	claymore = basic_type('C')
+	less_than_lethal = basic_type('L')
+
+
+@dataclass
+class special(cot_type):
+	flame_thrower = basic_type('F')
+	land_mines = mines('M')
+	laser = basic_type('L')
+	ied = basic_type('I')
+	nbc = basic_type('N')
+
+
+@dataclass
+class missile_subtype(cot_type):
+	telar = basic_type('E')
+	tlar = basic_type('R')
+
+
+@dataclass
+class missile_type(cot_type):
+	intermediate = missile_subtype('I')
+	long = missile_subtype('L')
+	short = missile_subtype('S')
+	theater = missile_subtype('T')
+
+
+@dataclass
+class missile_launcher(cot_type):
+	air_defence = basic_type('A')
+	anti_tank = basic_type('T')
+	surf_surf = basic_type('S')
+
+
+@dataclass
+class equipment_weapon(cot_type):
+	air_defence_gun = size('A')
+	anti_tank_gun = size('G')
+	anti_tank_rocket_launcher = size('T')
+	direct_fire_gun = size('D')
+	gernade_launchers = size('Z')
+	howitzer = size('H')
+	missile_launcher = missile_launcher('M')
+	mortar = size('O')
+	multiple_rocket_launcher = size('X')
+	rifle = basic_type('R')
+	single_rocket_launcher = size('S')
+
+
+@dataclass
 class equipment(cot_type):
 	sensor = sensor('S')
+	special = special('X')
+	weapon = equipment_weapon('W')
 
 
 @dataclass

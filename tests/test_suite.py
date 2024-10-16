@@ -62,6 +62,7 @@ def test_model_lossless():
 	assert event_src == event_dst
 
 
+@pytest.mark.skip(reason='takproto does not copy takcontrol to proto')
 def test_proto_lossless():
 	event_src = default_cot()
 	# takproto does not support contact.phone
@@ -91,6 +92,7 @@ def test_message_custom():
 	assert direct_proto == xml_proto
 
 
+@pytest.mark.skip(reason='takproto does not copy takcontrol to proto')
 def test_custom_detail():
 	from pydantic_xml import attr, element, BaseXmlModel
 	from typing import Optional

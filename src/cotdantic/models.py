@@ -4,13 +4,28 @@ from functools import partial
 from typing import TypeVar, Generic
 from typing import Optional
 from uuid import uuid4
+from dataclasses import dataclass
+from decimal import Decimal
 import datetime
 
 T = TypeVar('T', bound=BaseXmlModel)
 
 
 def datetime2iso(time: datetime.datetime):
-	return f'{time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-4]}Z'
+	# return f'{time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-4]}Z'
+	return f'{time.strftime("%Y-%m-%dT%H:%M:%S.%f")}Z'
+
+
+def epoch2iso(epoch: int):
+	time = datetime.datetime.fromtimestamp(epoch / 1000, tz=datetime.timezone.utc)
+	return datetime2iso(time)
+
+
+def iso2epoch(iso: str) -> int:
+	time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(
+		tzinfo=datetime.timezone.utc
+	)
+	return int(time.timestamp() * 1000)
 
 
 def isotime(hours: int = 0, minutes: int = 0, seconds: int = 0) -> str:
@@ -20,12 +35,7 @@ def isotime(hours: int = 0, minutes: int = 0, seconds: int = 0) -> str:
 	return datetime2iso(time)
 
 
-def epoch2iso(epoch: int):
-	time = datetime.datetime.fromtimestamp(epoch / 1000, tz=datetime.timezone.utc)
-	return datetime2iso(time)
-
-
-class Point(BaseXmlModel, skip_empty=True):
+class Point(BaseXmlModel, tag='point', skip_empty=True):
 	lat: float = attr()
 	lon: float = attr()
 	hae: float = attr(default=999999)
@@ -33,18 +43,21 @@ class Point(BaseXmlModel, skip_empty=True):
 	ce: float = attr(default=999999)
 
 
-class Contact(BaseXmlModel, skip_empty=True):
-	callsign: Optional[str] = attr(default=None)
+class Contact(BaseXmlModel, tag='contact', skip_empty=True):
 	endpoint: Optional[str] = attr(default=None)
 	phone: Optional[str] = attr(default=None)
+	callsign: Optional[str] = attr(default=None)
 
 
 class Link(BaseXmlModel, tag='link', skip_empty=True):
-	relation: Optional[str] = attr(default=None)
+	uid: Optional[str] = attr(default=None)
+	type: Optional[str] = attr(default=None)
 	parent_callsign: Optional[str] = attr(default=None)
+	relation: Optional[str] = attr(default=None)
+	production_time: Optional[str] = attr(default=None)
 
 
-class Status(BaseXmlModel):
+class Status(BaseXmlModel, tag='status'):
 	battery: Optional[int] = attr(default=None)
 
 
@@ -53,14 +66,14 @@ class Group(BaseXmlModel, tag='__group'):
 	role: Optional[str] = attr()
 
 
-class Takv(BaseXmlModel):
+class Takv(BaseXmlModel, tag='takv'):
 	device: Optional[str] = attr()
 	platform: Optional[str] = attr()
 	os: Optional[str] = attr()
 	version: Optional[str] = attr()
 
 
-class Track(BaseXmlModel):
+class Track(BaseXmlModel, tag='track'):
 	speed: Optional[float] = attr()
 	course: Optional[float] = attr()
 
@@ -74,13 +87,25 @@ class Alias(BaseXmlModel, tag='uid'):
 	Droid: Optional[str] = attr(default=None)
 
 
-class Image(BaseXmlModel):
+class Image(BaseXmlModel, tag='image'):
 	bytes: str
 	size: int = attr()
 	height: int = attr()
 	width: int = attr()
 	mine: str = attr(default='image/jpg')
 	type: str = attr(default='EO')
+
+
+class Archive(BaseXmlModel, tag='archive'):
+	pass
+
+
+class Usericon(BaseXmlModel, tag='usericon'):
+	iconsetpath: Optional[str] = attr(default=None)
+
+
+class HeightUnit(BaseXmlModel, tag='height_unit'):
+	unit: int
 
 
 class ConnectionEntry(BaseXmlModel, tag='ConnectionEntry'):
@@ -101,21 +126,62 @@ class Video(BaseXmlModel, tag='__video'):
 	connection_entry: ConnectionEntry = element()
 
 
+class Remarks(BaseXmlModel, tag='remarks'):
+	text: str
+	source: Optional[str] = attr(default=None)
+	source_id: Optional[str] = attr(name='sourceID', default=None)
+	to: Optional[str] = attr(default=None)
+	time: Optional[str] = attr(default=None)
+
+
+class ServerDestination(BaseXmlModel, tag='__serverdestination'):
+	destinations: Optional[str] = attr(default=None)
+
+
+class ChatGroup(BaseXmlModel, tag='chatgrp'):
+	uid0: Optional[str] = attr(default=None)
+	uid1: Optional[str] = attr(default=None)
+	id: Optional[str] = attr(default=None)
+
+
+class Chat(BaseXmlModel, tag='__chat', search_mode='unordered'):
+	parent: Optional[str] = attr(default=None)
+	group_owner: Optional[bool] = attr(name='groupOwner', default=None)
+	message_id: Optional[str] = attr(name='messageId', default=None)
+	chatroom: Optional[str] = attr(default=None)
+	id: Optional[str] = attr(default=None)
+	sender_callsign: Optional[str] = attr(name='senderCallsign', default=None)
+	chatgrp: Optional[ChatGroup] = element(default=None)
+
+
 class Detail(BaseXmlModel, tag='detail', skip_empty=True):
 	raw_xml: str = Field(exclude=True, default='')
 	contact: Optional[Contact] = element(default=None)
+	chat: Optional[Chat] = element(default=None)
+	link: Optional[Link] = element(default=None)
 	takv: Optional[Takv] = element(default=None)
 	group: Optional[Group] = element(default=None)
 	status: Optional[Status] = element(default=None)
 	track: Optional[Track] = element(default=None)
 	precision_location: Optional[PrecisionLocation] = element(default=None)
-	link: Optional[Link] = element(default=None)
 	alias: Optional[Alias] = element(default=None)
 	image: Optional[Image] = element(default=None)
 	video: Optional[Video] = element(default=None)
+	archive: Optional[Archive] = element(default=None)
+	usericon: Optional[Usericon] = element(default=None)
+	height_unit: Optional[HeightUnit] = element(default=None)
+	server_destination: Optional[ServerDestination] = element(default=None)
+	remarks: Optional[Remarks] = element(default=None)
+
+
+class TakControl(BaseXmlModel):
+	minProtoVersion: int = 0
+	maxProtoVersion: int = 0
+	contactUid: str = ''
 
 
 class EventBase(BaseXmlModel, Generic[T], tag='event', skip_empty=True):
+	tak_control: TakControl = Field(exclude=True, default_factory=lambda: TakControl())
 	type: str = attr()
 	point: Point = element()
 	version: float = attr(default=2.0)

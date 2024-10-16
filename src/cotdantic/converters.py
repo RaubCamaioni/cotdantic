@@ -9,7 +9,9 @@ from .models import (
 	PrecisionLocation,
 	Detail,
 	Track,
+	TakControl,
 	epoch2iso,
+	iso2epoch,
 )
 
 from pydantic_xml import BaseXmlModel
@@ -21,7 +23,7 @@ from takproto.proto import TakMessage
 from takproto.functions import format_time, msg2proto
 
 PROTO_KNOWN_ELEMENTS = {
-	'contact',
+	# 'contact', # have to check for phone attribute
 	'group',
 	'precision_location',
 	'status',
@@ -65,6 +67,7 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	proto_status = proto_detail.status
 	proto_takv = proto_detail.takv
 	proto_pl = proto_detail.precisionLocation
+	tak_control = proto_message.takControl
 
 	point = Point(
 		lat=proto_event.lat,
@@ -119,7 +122,7 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 
 	annotation = cls.model_fields['detail'].annotation
 	types_in_union = get_args(annotation)
-	custom_type = next(t for t in types_in_union if t is not None)
+	custom_type = types_in_union[0]
 
 	raw_xml = f'<detail>{proto_detail.xmlDetail}</detail>'
 	detail: Detail = custom_type.from_xml(raw_xml)
@@ -133,7 +136,14 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	# TODO: add only xml that is not captured and add back to proto
 	detail.raw_xml = raw_xml
 
+	control = TakControl(
+		minProtoVersion=tak_control.minProtoVersion,
+		maxProtoVersion=tak_control.maxProtoVersion,
+		contactUid=tak_control.contactUid,
+	)
+
 	event = cls(
+		tak_control=control,
 		type=proto_event.type,
 		access=proto_event.access or None,
 		qos=proto_event.qos or None,
@@ -157,17 +167,17 @@ def model2xml2proto(model: EventBase):
 
 def model2proto(model: EventBase) -> bytes:
 	message = model2message(model)
-	message.takControl.minProtoVersion = 0
-	message.takControl.maxProtoVersion = 0
-	message.takControl.contactUid = ''
 	return bytes(msg2proto(message, None))
 
 
 def model2message(model: EventBase) -> TakMessage:
 	tak_message = TakMessage()
 
-	geo_chat = 'GeoChat.' in model.uid
+	tak_message.takControl.minProtoVersion = model.tak_control.minProtoVersion
+	tak_message.takControl.maxProtoVersion = model.tak_control.maxProtoVersion
+	tak_message.takControl.contactUid = model.tak_control.contactUid
 
+	geo_chat = 'GeoChat.' in model.uid
 	if geo_chat:
 		tak_message.takControl.contactUid = model.uid.split('.')[1]
 
@@ -178,9 +188,9 @@ def model2message(model: EventBase) -> TakMessage:
 	tak_event.opex = model.opex or ''
 	tak_event.uid = model.uid
 	tak_event.how = model.how
-	tak_event.sendTime = format_time(model.time)
-	tak_event.startTime = format_time(model.start)
-	tak_event.staleTime = format_time(model.stale)
+	tak_event.sendTime = iso2epoch(model.time)
+	tak_event.startTime = iso2epoch(model.start)
+	tak_event.staleTime = iso2epoch(model.stale)
 	tak_event.lat = model.point.lat
 	tak_event.lon = model.point.lon
 	tak_event.hae = model.point.hae
@@ -192,6 +202,8 @@ def model2message(model: EventBase) -> TakMessage:
 		return tak_message
 
 	tak_detail = tak_event.detail
+
+	encode_contact = True
 
 	if geo_chat:
 		detail_str = detail.to_xml().decode()
@@ -209,11 +221,17 @@ def model2message(model: EventBase) -> TakMessage:
 			if instance is None:
 				continue
 
+			if name == 'contact':
+				if instance.phone is None:
+					continue
+				else:
+					encode_contact = False
+
 			xml_string += instance.to_xml()
 
 		tak_detail.xmlDetail = xml_string.decode()
 
-	if detail.contact is not None:
+	if encode_contact and detail.contact is not None:
 		tak_detail.contact.endpoint = detail.contact.endpoint or ''
 		tak_detail.contact.callsign = detail.contact.callsign or ''
 
@@ -226,7 +244,7 @@ def model2message(model: EventBase) -> TakMessage:
 		tak_detail.precisionLocation.altsrc = detail.precision_location.altsrc
 
 	if detail.status is not None:
-		tak_detail.status.battery = detail.status.battery
+		tak_detail.status.battery = detail.status.battery or 0
 
 	if detail.takv is not None:
 		tak_detail.takv.device = detail.takv.device
