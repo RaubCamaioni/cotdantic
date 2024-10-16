@@ -6,35 +6,49 @@ from contextlib import ExitStack
 import platform
 import time
 import uuid
+from threading import Lock
 
+print_lock = Lock()
 
 def print_cot(data: bytes, who: str):
-	proto = None
+	with print_lock:
 
-	if is_xml(data):
-		proto = xml2proto(data)
+		xml_original = None
+		xml_reconstructed = None
+		proto_original = None
+		proto_reconstructed = None
 
-	proto2 = None
-	if is_proto(data):
-		proto = data
-		model = Event.from_bytes(proto)
-		proto2 = model.to_bytes()
+		data_type_string = "unknown"
+		if is_xml(data):
+			data_type_string = "xml"
+			xml_original = data
+			model = Event.from_xml(data)
+			proto_reconstructed = model.to_bytes()
+			xml_reconstructed = model.to_xml()
+		else:
+			data_type_string = "protobuf"
+			proto_original = data
+			model = Event.from_bytes(proto_original)
+			proto_reconstructed = model.to_bytes()
+			xml_reconstructed = model.to_xml()
 
-	if proto is not None:
-		model = Event.from_bytes(proto)
-		xml = model.to_xml()
+		print('=' * 100 + f' {who}-captured {data_type_string}')
 
-		print('=' * 100 + f' {who}-captured')
+		if proto_original is not None and proto_original != proto_reconstructed:
+			print(f'WARNING: proto_original != proto_reconstructed {len(proto_original)} {len(proto_reconstructed)}')
+			print(proto_original, '\n')
+			print(proto_reconstructed, '\n')
 
-		if proto2 is not None and proto != proto2:
-			print(f'WARNING: proto and reconstruction not identical: bytes: {len(proto2)}')
-			print(proto2, '\n')
+		if xml_original is not None and xml_original != xml_reconstructed:
+			print(f'WARNING: xml_original != xml_reconstructed {len(xml_original)} {len(xml_reconstructed)}')
+			print(xml_original, '\n')
+			print(xml_reconstructed, '\n')
 
-		print(f'proto: bytes: {len(proto)}')
-		print(proto, '\n')
+		print(f'proto reconstructed: bytes: {len(proto_reconstructed)}')
+		print(proto_reconstructed, '\n')
 
-		print(f'xml: bytes: {len(xml)}')
-		print(model.to_xml(pretty_print=True).decode().strip())
+		print(f'xml reconstructed: bytes: {len(xml_reconstructed)}')
+		print(model.to_xml(pretty_print=True, encoding="UTF-8", standalone=True).decode().strip())
 
 
 def cot(address: str, port: int) -> Event:

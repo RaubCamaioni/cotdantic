@@ -96,6 +96,13 @@ class Image(BaseXmlModel, tag='image'):
 	type: str = attr(default='EO')
 
 
+class Attachment(BaseXmlModel, tag="attachment"):
+	type: Optional[str] = attr(default=None)
+	xml: Optional[str] = attr(default=None)
+
+class SendData(BaseXmlModel, tag="sendData"):
+	sent: Optional[int] = attr(default=None)
+
 class Archive(BaseXmlModel, tag='archive'):
 	pass
 
@@ -153,8 +160,19 @@ class Chat(BaseXmlModel, tag='__chat', search_mode='unordered'):
 	sender_callsign: Optional[str] = attr(name='senderCallsign', default=None)
 	chatgrp: Optional[ChatGroup] = element(default=None)
 
+class Hud(BaseXmlModel, tag="hud"):
+	role: Optional[str] = attr(default=None)
 
-class Detail(BaseXmlModel, tag='detail', skip_empty=True):
+class Planning(BaseXmlModel, tag="planning"):
+	session_id: Optional[str] = attr(name="sessionId", default=None)
+
+class TakDataPackage(BaseXmlModel, tag="takDataPackage"):
+	name: Optional[str] = attr(default=None)
+
+class VMF(BaseXmlModel, tag="vmf"):
+	pass
+
+class Detail(BaseXmlModel, tag='detail', skip_empty=True, search_mode='unordered'):
 	raw_xml: str = Field(exclude=True, default='')
 	contact: Optional[Contact] = element(default=None)
 	chat: Optional[Chat] = element(default=None)
@@ -165,12 +183,18 @@ class Detail(BaseXmlModel, tag='detail', skip_empty=True):
 	track: Optional[Track] = element(default=None)
 	precision_location: Optional[PrecisionLocation] = element(default=None)
 	alias: Optional[Alias] = element(default=None)
+	vmf: Optional[VMF] = element(default=None)
 	image: Optional[Image] = element(default=None)
 	video: Optional[Video] = element(default=None)
 	archive: Optional[Archive] = element(default=None)
 	usericon: Optional[Usericon] = element(default=None)
 	height_unit: Optional[HeightUnit] = element(default=None)
 	server_destination: Optional[ServerDestination] = element(default=None)
+	attachemnt: Optional[Attachment] = element(default=None)
+	send_data: Optional[SendData] = element(default=None)
+	tak_data_package: Optional[TakDataPackage] = element(default=None)
+	hud: Optional[Hud] = element(default=None)
+	planning: Optional[Planning] = element(default=None)
 	remarks: Optional[Remarks] = element(default=None)
 
 
