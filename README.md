@@ -99,7 +99,7 @@ from typing import Optional
 from cotdantic import *
 
 
-class CustomElement(BaseXmlModel, tag='target_description'):
+class CustomElement(CotBase, tag='target_description'):
 	hair_color: str = attr()
 	eye_color: str = attr()
 

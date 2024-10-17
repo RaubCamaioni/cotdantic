@@ -1,14 +1,17 @@
-from pydantic_xml import BaseXmlModel, element, attr, computed_attr
-from pydantic import Field
+from pydantic_xml import element, attr, computed_attr
+from typing import TypeVar, Generic, Optional
 from functools import partial
-from typing import TypeVar, Generic
-from typing import Optional
+from pydantic import Field
 from uuid import uuid4
-from dataclasses import dataclass
-from decimal import Decimal
+import pydantic_xml
 import datetime
 
-T = TypeVar('T', bound=BaseXmlModel)
+
+class CotBase(pydantic_xml.BaseXmlModel, skip_empty=True, search_mode='unordered'):
+	pass
+
+
+T = TypeVar('T', bound=CotBase)
 
 
 def datetime2iso(time: datetime.datetime):
@@ -35,7 +38,7 @@ def isotime(hours: int = 0, minutes: int = 0, seconds: int = 0) -> str:
 	return datetime2iso(time)
 
 
-class Point(BaseXmlModel, tag='point', skip_empty=True):
+class Point(CotBase, tag='point'):
 	lat: float = attr()
 	lon: float = attr()
 	hae: float = attr(default=999999)
@@ -43,13 +46,13 @@ class Point(BaseXmlModel, tag='point', skip_empty=True):
 	ce: float = attr(default=999999)
 
 
-class Contact(BaseXmlModel, tag='contact', skip_empty=True):
+class Contact(CotBase, tag='contact'):
 	endpoint: Optional[str] = attr(default=None)
 	phone: Optional[str] = attr(default=None)
 	callsign: Optional[str] = attr(default=None)
 
 
-class Link(BaseXmlModel, tag='link', skip_empty=True):
+class Link(CotBase, tag='link'):
 	uid: Optional[str] = attr(default=None)
 	type: Optional[str] = attr(default=None)
 	parent_callsign: Optional[str] = attr(default=None)
@@ -57,37 +60,38 @@ class Link(BaseXmlModel, tag='link', skip_empty=True):
 	production_time: Optional[str] = attr(default=None)
 
 
-class Status(BaseXmlModel, tag='status'):
+class Status(CotBase, tag='status'):
+	readiness: Optional[bool] = attr(default=None)
 	battery: Optional[int] = attr(default=None)
 
 
-class Group(BaseXmlModel, tag='__group'):
+class Group(CotBase, tag='__group'):
 	name: Optional[str] = attr()
 	role: Optional[str] = attr()
 
 
-class Takv(BaseXmlModel, tag='takv'):
+class Takv(CotBase, tag='takv'):
 	device: Optional[str] = attr()
 	platform: Optional[str] = attr()
 	os: Optional[str] = attr()
 	version: Optional[str] = attr()
 
 
-class Track(BaseXmlModel, tag='track'):
+class Track(CotBase, tag='track'):
 	speed: Optional[float] = attr()
 	course: Optional[float] = attr()
 
 
-class PrecisionLocation(BaseXmlModel, tag='precisionlocation'):
+class PrecisionLocation(CotBase, tag='precisionlocation'):
 	geopointsrc: Optional[str] = attr(default=None)
 	altsrc: Optional[str] = attr(default=None)
 
 
-class Alias(BaseXmlModel, tag='uid'):
+class Alias(CotBase, tag='uid'):
 	Droid: Optional[str] = attr(default=None)
 
 
-class Image(BaseXmlModel, tag='image'):
+class Image(CotBase, tag='image'):
 	bytes: str
 	size: int = attr()
 	height: int = attr()
@@ -96,26 +100,28 @@ class Image(BaseXmlModel, tag='image'):
 	type: str = attr(default='EO')
 
 
-class Attachment(BaseXmlModel, tag="attachment"):
+class Attachment(CotBase, tag='attachment'):
 	type: Optional[str] = attr(default=None)
 	xml: Optional[str] = attr(default=None)
 
-class SendData(BaseXmlModel, tag="sendData"):
+
+class SendData(CotBase, tag='sendData'):
 	sent: Optional[int] = attr(default=None)
 
-class Archive(BaseXmlModel, tag='archive'):
+
+class Archive(CotBase, tag='archive'):
 	pass
 
 
-class Usericon(BaseXmlModel, tag='usericon'):
+class Usericon(CotBase, tag='usericon'):
 	iconsetpath: Optional[str] = attr(default=None)
 
 
-class HeightUnit(BaseXmlModel, tag='height_unit'):
+class HeightUnit(CotBase, tag='height_unit'):
 	unit: int
 
 
-class ConnectionEntry(BaseXmlModel, tag='ConnectionEntry'):
+class ConnectionEntry(CotBase, tag='ConnectionEntry'):
 	protocol: str = attr()
 	path: str = attr()
 	address: str = attr()
@@ -129,11 +135,11 @@ class ConnectionEntry(BaseXmlModel, tag='ConnectionEntry'):
 	buffer_time: int = attr(name='bufferTime')
 
 
-class Video(BaseXmlModel, tag='__video'):
+class Video(CotBase, tag='__video'):
 	connection_entry: ConnectionEntry = element()
 
 
-class Remarks(BaseXmlModel, tag='remarks'):
+class Remarks(CotBase, tag='remarks'):
 	text: Optional[str] = None
 	source: Optional[str] = attr(default=None)
 	source_id: Optional[str] = attr(name='sourceID', default=None)
@@ -141,17 +147,17 @@ class Remarks(BaseXmlModel, tag='remarks'):
 	time: Optional[str] = attr(default=None)
 
 
-class ServerDestination(BaseXmlModel, tag='__serverdestination'):
+class ServerDestination(CotBase, tag='__serverdestination'):
 	destinations: Optional[str] = attr(default=None)
 
 
-class ChatGroup(BaseXmlModel, tag='chatgrp'):
+class ChatGroup(CotBase, tag='chatgrp'):
 	uid0: Optional[str] = attr(default=None)
 	uid1: Optional[str] = attr(default=None)
 	id: Optional[str] = attr(default=None)
 
 
-class Chat(BaseXmlModel, tag='__chat', search_mode='unordered'):
+class Chat(CotBase, tag='__chat'):
 	parent: Optional[str] = attr(default=None)
 	group_owner: Optional[bool] = attr(name='groupOwner', default=None)
 	message_id: Optional[str] = attr(name='messageId', default=None)
@@ -160,19 +166,28 @@ class Chat(BaseXmlModel, tag='__chat', search_mode='unordered'):
 	sender_callsign: Optional[str] = attr(name='senderCallsign', default=None)
 	chatgrp: Optional[ChatGroup] = element(default=None)
 
-class Hud(BaseXmlModel, tag="hud"):
+
+class Hud(CotBase, tag='hud'):
 	role: Optional[str] = attr(default=None)
 
-class Planning(BaseXmlModel, tag="planning"):
-	session_id: Optional[str] = attr(name="sessionId", default=None)
 
-class TakDataPackage(BaseXmlModel, tag="takDataPackage"):
+class Planning(CotBase, tag='planning'):
+	session_id: Optional[str] = attr(name='sessionId', default=None)
+
+
+class TakDataPackage(CotBase, tag='takDataPackage'):
 	name: Optional[str] = attr(default=None)
 
-class VMF(BaseXmlModel, tag="vmf"):
+
+class VMF(CotBase, tag='vmf'):
 	pass
 
-class Detail(BaseXmlModel, tag='detail', skip_empty=True, search_mode='unordered'):
+
+class Color(CotBase, tag='color'):
+	argb: Optional[int] = attr(default=None)
+
+
+class Detail(CotBase, tag='detail'):
 	raw_xml: str = Field(exclude=True, default='')
 	contact: Optional[Contact] = element(default=None)
 	chat: Optional[Chat] = element(default=None)
@@ -196,15 +211,16 @@ class Detail(BaseXmlModel, tag='detail', skip_empty=True, search_mode='unordered
 	hud: Optional[Hud] = element(default=None)
 	planning: Optional[Planning] = element(default=None)
 	remarks: Optional[Remarks] = element(default=None)
+	color: Optional[Color] = element(default=None)
 
 
-class TakControl(BaseXmlModel):
+class TakControl(CotBase):
 	minProtoVersion: int = 0
 	maxProtoVersion: int = 0
 	contactUid: str = ''
 
 
-class EventBase(BaseXmlModel, Generic[T], tag='event', skip_empty=True):
+class EventBase(CotBase, Generic[T], tag='event'):
 	tak_control: TakControl = Field(exclude=True, default_factory=lambda: TakControl())
 	type: str = attr()
 	point: Point = element()

@@ -94,13 +94,14 @@ def test_message_custom():
 
 @pytest.mark.skip(reason='takproto does not copy takcontrol to proto')
 def test_custom_detail():
-	from pydantic_xml import attr, element, BaseXmlModel
+	from pydantic_xml import attr, element
+	from cotdantic import CotBase
 	from typing import Optional
 
 	event_src = default_cot()
 	event_src.detail.contact.phone = None
 
-	class CustomElement(BaseXmlModel, tag='target_description'):
+	class CustomElement(CotBase, tag='target_description'):
 		hair_color: str = attr()
 		eye_color: str = attr()
 

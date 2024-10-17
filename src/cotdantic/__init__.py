@@ -14,11 +14,11 @@ from .models import (
 	Detail,
 	EventBase,
 	Event,
+	CotBase,
 )
 
 from . import converters
 from .cot_types import atom
-from pydantic_xml import BaseXmlModel
 
 
 def __event_to_bytes(self: EventBase) -> bytes:

@@ -10,23 +10,23 @@ from .models import (
 	Detail,
 	Track,
 	TakControl,
+	CotBase,
 	epoch2iso,
 	iso2epoch,
 )
 
-from pydantic_xml import BaseXmlModel
 import xml.etree.ElementTree as ET
 from typing import get_args
 
 from takproto import parse_proto, xml2proto
 from takproto.proto import TakMessage
-from takproto.functions import format_time, msg2proto
+from takproto.functions import msg2proto
 
 PROTO_KNOWN_ELEMENTS = {
-	# 'contact', # have to check for phone attribute
+	# 'contact', # check non-standard values
 	'group',
-	'precision_location',
-	'status',
+	'precision_location',  # sometime in details
+	# 'status', # check non-standard values
 	'takv',
 	'track',
 	'raw_xml',  # do not encode
@@ -106,9 +106,9 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 			version=proto_takv.version or None,
 		)
 
-	pl = None
+	precision_location = None
 	if proto_detail.HasField('precisionLocation'):
-		pl = PrecisionLocation(
+		precision_location = PrecisionLocation(
 			geopointsrc=proto_pl.geopointsrc or None,
 			altsrc=proto_pl.altsrc or None,
 		)
@@ -126,12 +126,14 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 
 	raw_xml = f'<detail>{proto_detail.xmlDetail}</detail>'
 	detail: Detail = custom_type.from_xml(raw_xml)
-	detail.contact = detail.contact or contact
+	detail.contact = (
+		detail.contact or contact
+	)  # TODO: might require combine detail and proto values?
 	detail.group = detail.group or group
 	detail.track = track
-	detail.status = status
+	detail.status = detail.status or status
 	detail.takv = takv
-	detail.precision_location = pl
+	detail.precision_location = detail.precision_location or precision_location
 
 	# TODO: add only xml that is not captured and add back to proto
 	detail.raw_xml = raw_xml
@@ -204,6 +206,7 @@ def model2message(model: EventBase) -> TakMessage:
 	tak_detail = tak_event.detail
 
 	encode_contact = True
+	encode_status = True
 
 	if geo_chat:
 		detail_str = detail.to_xml().decode()
@@ -216,7 +219,7 @@ def model2message(model: EventBase) -> TakMessage:
 			if name in PROTO_KNOWN_ELEMENTS:
 				continue
 
-			instance: BaseXmlModel = getattr(detail, name)
+			instance: CotBase = getattr(detail, name)
 
 			if instance is None:
 				continue
@@ -226,6 +229,12 @@ def model2message(model: EventBase) -> TakMessage:
 					continue
 				else:
 					encode_contact = False
+
+			if name == 'status':
+				if instance.readiness is None:
+					continue
+				else:
+					encode_status = False
 
 			xml_string += instance.to_xml()
 
@@ -240,10 +249,10 @@ def model2message(model: EventBase) -> TakMessage:
 		tak_detail.group.role = detail.group.role or ''
 
 	if detail.precision_location is not None:
-		tak_detail.precisionLocation.geopointsrc = detail.precision_location.geopointsrc
-		tak_detail.precisionLocation.altsrc = detail.precision_location.altsrc
+		tak_detail.precisionLocation.geopointsrc = detail.precision_location.geopointsrc or ''
+		tak_detail.precisionLocation.altsrc = detail.precision_location.altsrc or ''
 
-	if detail.status is not None:
+	if encode_status and detail.status is not None:
 		tak_detail.status.battery = detail.status.battery or 0
 
 	if detail.takv is not None:
