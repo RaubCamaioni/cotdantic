@@ -22,15 +22,19 @@ COT is sent with TCP/UDP and multicast.
 This package includes a simple multicast listener that automatically parses XML/Protobuf messages.  
 The captured messages are printed in their XML/Protobuf representations.  
 ```
-usage: cot-listener [-h] [--maddress MADDRESS] [--mport MPORT] [--minterface MINTERFACE] [--uaddress UADDRESS] [--uport UPORT]
+usage: cot-listener [-h] [--maddress MADDRESS] [--mport MPORT] [--minterface MINTERFACE] [--gaddress GADDRESS] [--gport GPORT] [--ginterface GINTERFACE] [--uaddress UADDRESS] [--uport UPORT] [--source SOURCE]
 
 options:
   -h, --help            show this help message and exit
   --maddress MADDRESS
   --mport MPORT
   --minterface MINTERFACE
+  --gaddress GADDRESS
+  --gport GPORT
+  --ginterface GINTERFACE
   --uaddress UADDRESS
   --uport UPORT
+  --source SOURCE
 ```
 
 A docker build is included for multicast docker testing.  
