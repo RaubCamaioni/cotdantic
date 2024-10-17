@@ -1,5 +1,5 @@
 from pydantic_xml import element, attr, computed_attr
-from typing import TypeVar, Generic, Optional
+from typing import TypeVar, Generic, Optional, Union, Any
 from functools import partial
 from pydantic import Field
 from uuid import uuid4
@@ -7,8 +7,21 @@ import pydantic_xml
 import datetime
 
 
-class CotBase(pydantic_xml.BaseXmlModel, skip_empty=True, search_mode='unordered'):
-	pass
+class CotBase(pydantic_xml.BaseXmlModel, search_mode='unordered'):
+	def to_xml(
+		self,
+		*,
+		skip_empty: bool = False,
+		exclude_none: bool = True,
+		exclude_unset: bool = False,
+		**kwargs: Any,
+	) -> Union[str, bytes]:
+		return super().to_xml(
+			skip_empty=skip_empty,
+			exclude_none=exclude_none,
+			exclude_unset=exclude_unset,
+			**kwargs,
+		)
 
 
 T = TypeVar('T', bound=CotBase)
@@ -25,9 +38,7 @@ def epoch2iso(epoch: int):
 
 
 def iso2epoch(iso: str) -> int:
-	time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(
-		tzinfo=datetime.timezone.utc
-	)
+	time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
 	return int(time.timestamp() * 1000)
 
 
