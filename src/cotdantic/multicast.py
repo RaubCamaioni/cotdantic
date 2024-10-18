@@ -152,3 +152,86 @@ class MulticastListener:
 		self.stop()
 		if exc_type is KeyboardInterrupt:
 			return True
+
+
+class TcpListener:
+	def __init__(self, address: str, port: int):
+		self.address = address
+		self.port = port
+		self.sock: socket.socket = None
+		self.select_event = SelectEvent()
+		self.processing_thread: Union[Thread, None] = None
+		self.observers: List[Callable[[bytes], None]] = []
+
+	def clear_observers(self):
+		self.observers = []
+
+	def add_observer(self, func: Callable[[bytes, Tuple[str, int]], None]):
+		self.observers.append(func)
+
+	def remove_observer(self, func: Callable[[bytes, Tuple[str, int]], None]):
+		self.observers.remove(func)
+
+	def _connect(self):
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.sock.bind((self.address, self.port))
+		self.sock.listen()
+
+	def process_observers(self, data, server):
+		"""process observer functions"""
+		for observer in self.observers:
+			try:
+				observer(data, server)
+			except Exception as e:
+				print(f'Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}')
+				traceback.print_exc()
+				self.remove_observer(observer)
+				continue
+
+	def start(self) -> 'TcpListener':
+		"""start tcp listener"""
+
+		self._connect()
+
+		def _publisher():
+			with self.sock:
+				while True:
+					if self.select_event.wait(self.sock):
+						break
+					conn, server = self.sock.accept()
+					with conn:
+						data = []
+						while True:
+							b = conn.recv(1024)
+							if not b:
+								break
+							data.append(b)
+						data = b''.join(data)
+
+						if data:
+							self.process_observers(data, server)
+
+		self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
+		self.processing_thread.start()
+
+		return self
+
+	def stop(self):
+		"""stop publishing thread and close socket"""
+
+		self.select_event.set()
+
+		if self.processing_thread:
+			self.processing_thread.join(5)
+
+		self.select_event.close()
+		self.sock.close()
+
+	def __enter__(self):
+		self.start()
+		return self
+
+	def __exit__(self, exc_type, exec_value, traceback):
+		self.stop()
+		if exc_type is KeyboardInterrupt:
+			return True

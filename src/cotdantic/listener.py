@@ -1,14 +1,15 @@
 from .converters import is_xml, xml2proto, is_proto
-from .multicast import MulticastListener
-from .models import *
-from .cot_types import atom
+from .multicast import MulticastListener, TcpListener
 from contextlib import ExitStack
-import platform
-import time
-import uuid
+from .cot_types import atom
 from threading import Lock
 from typing import Tuple
+from .models import *
+import logging
+import uuid
+import time
 
+log = logging.getLogger(__name__)
 print_lock = Lock()
 
 
@@ -36,34 +37,30 @@ def print_cot(data: bytes, server: Tuple[str, int], who: str = 'unknown', source
 			proto_reconstructed = model.to_bytes()
 			xml_reconstructed = model.to_xml()
 
-		print('=' * 100 + f' {who}-captured {data_type_string}')
+		log.info('=' * 100 + f' {who}-captured {data_type_string}')
 
 		if proto_original is not None and proto_original != proto_reconstructed:
-			print(
-				f'WARNING: proto_original != proto_reconstructed {len(proto_original)} {len(proto_reconstructed)}'
-			)
-			print(proto_original, '\n')
-			print(proto_reconstructed, '\n')
+			log.debug(f'proto_original != proto_reconstructed {len(proto_original)} {len(proto_reconstructed)}')
+			log.debug(f'{proto_original}')
+			log.debug(f'{proto_reconstructed}')
 
 		if xml_original is not None and xml_original != xml_reconstructed:
-			print(
-				f'WARNING: xml_original != xml_reconstructed {len(xml_original)} {len(xml_reconstructed)}'
-			)
-			print(xml_original, '\n')
-			print(xml_reconstructed, '\n')
+			log.debug(f'xml_original != xml_reconstructed {len(xml_original)} {len(xml_reconstructed)}')
+			log.debug(f'{xml_original}')
+			log.debug(f'{xml_reconstructed}')
 
-		print(f'proto reconstructed: bytes: {len(proto_reconstructed)}')
-		print(proto_reconstructed, '\n')
+		log.info(f'proto reconstructed: bytes: {len(proto_reconstructed)}')
+		log.info(f'{proto_reconstructed}\n')
 
-		print(f'xml reconstructed: bytes: {len(xml_reconstructed)}')
-		print(model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip())
+		log.info(f'xml reconstructed: bytes: {len(xml_reconstructed)}')
+		log.info(f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n")
 
 
 def cot(address: str, port: int) -> Event:
 	uid = f'cotdantic-{uuid.getnode()}'
 	cot_type = str(atom.friend.ground.unit.combat.infantry)
 	point = Point(lat=38.691420, lon=-77.134600)
-	contact = Contact(callsign='CotDantic', endpoint=f'{address}:{port}:udp')
+	contact = Contact(callsign='CotDantic', endpoint=f'{address}:{port}:tcp')
 	group = Group(name='Cyan', role='Team Member')
 	detail = Detail(contact=contact, group=group)
 	event = Event(
@@ -77,6 +74,7 @@ def cot(address: str, port: int) -> Event:
 
 def cot_listener():
 	import argparse
+	import sys
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--maddress', type=str, default='239.2.3.1')
@@ -88,6 +86,13 @@ def cot_listener():
 	parser.add_argument('--uaddress', type=str, default='0.0.0.0')
 	parser.add_argument('--uport', type=int, default=4242)
 	parser.add_argument('--source', type=str, default=None)
+	parser.add_argument(
+		'-l',
+		'--log-level',
+		default='INFO',
+		choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+		help='Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)',
+	)
 	args = parser.parse_args()
 
 	maddress = args.maddress
@@ -99,17 +104,31 @@ def cot_listener():
 	gport = args.gport
 	ginterface = args.ginterface
 	source = args.source
+	log_level = args.log_level
+
+	numeric_level = getattr(logging, log_level, None)
+	if not isinstance(numeric_level, int):
+		raise ValueError(f'Invalid log level: {args.logging}')
+	logging.basicConfig(level=numeric_level, format='%(message)s')
+
+	logging.basicConfig(
+		stream=sys.stdout,
+		level=numeric_level,
+		format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+	)
 
 	event = cot(uaddress, uport)
 
 	with ExitStack() as stack:
 		multicast = stack.enter_context(MulticastListener(maddress, mport, minterface))
 		group_chat = stack.enter_context(MulticastListener(gaddress, gport, ginterface))
-		unicast = stack.enter_context(MulticastListener(uaddress, uport))
+		unicast_udp = stack.enter_context(MulticastListener(uaddress, uport))
+		unicast_tcp = stack.enter_context(TcpListener(uaddress, uport))
 
 		multicast.add_observer(partial(print_cot, who='multicast', source=source))
 		group_chat.add_observer(partial(print_cot, who='groupchat', source=source))
-		unicast.add_observer(partial(print_cot, who='unicast', source=source))
+		unicast_udp.add_observer(partial(print_cot, who='unicast_udp', source=source))
+		unicast_tcp.add_observer(partial(print_cot, who='unicast_tcp', source=source))
 
 		while True:
 			event.time = isotime()
