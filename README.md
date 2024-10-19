@@ -22,19 +22,25 @@ COT is sent with TCP/UDP and multicast.
 This package includes a simple multicast listener that automatically parses XML/Protobuf messages.  
 The captured messages are printed in their XML/Protobuf representations.  
 ```
+cot-listener --help
 usage: cot-listener [-h] [--maddress MADDRESS] [--mport MPORT] [--minterface MINTERFACE] [--gaddress GADDRESS] [--gport GPORT] [--ginterface GINTERFACE] [--uaddress UADDRESS] [--uport UPORT] [--source SOURCE]
+                    [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
 
 options:
   -h, --help            show this help message and exit
-  --maddress MADDRESS
-  --mport MPORT
+  --maddress MADDRESS   SA address
+  --mport MPORT         SA port
   --minterface MINTERFACE
-  --gaddress GADDRESS
-  --gport GPORT
+                        SA interface
+  --gaddress GADDRESS   Chat address
+  --gport GPORT         Chat port
   --ginterface GINTERFACE
-  --uaddress UADDRESS
-  --uport UPORT
-  --source SOURCE
+                        Chat interface
+  --uaddress UADDRESS   Direct address
+  --uport UPORT         Direct port
+  --source SOURCE       Filter for messages from source
+  --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 ```
 
 A docker build is included for multicast docker testing.  
@@ -125,11 +131,17 @@ proto = bytes(custom_event)
 CustomEvent.from_bytes(proto)
 ```
 
-## Raw XML (not fully supported)
+Alternativly, if the extention is simplistic, the following can be used to add custom detail elements.  
+The below raw_xml will be added to the protobuf and XML.  
+```
+detail = Detail()
+detail.raw_xml = b"<target_description hair_color="red" eye_color="brown"/>"
+```
+
+## Raw XML
 The protobuf xml detail string is stored in Detail.raw_xml.  
-This attribute can be used to capture xml tags not defined in Detail.  
-Eventually, this will also capture unknown tags from xml messages.  
-The raw_xml will be optionally added back to xml/protobuf encoding.  
+The raw_xml field contains all the XML tags not defined by the model.  
+These tags are added back when encoded to protobuf or XML.  
 
 
 ## Cot Types

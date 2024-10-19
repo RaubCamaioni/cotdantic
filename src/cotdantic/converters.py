@@ -135,8 +135,10 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	detail.takv = takv
 	detail.precision_location = detail.precision_location or precision_location
 
-	# TODO: add only xml that is not captured and add back to proto
-	detail.raw_xml = raw_xml
+	root = ET.fromstring(raw_xml)
+	tags = {child.tag for child in root} - set(detail.tags())
+	tags = [ET.tostring(root.find(tag), encoding='utf-8') for tag in tags]
+	detail.raw_xml = b''.join(tags)
 
 	control = TakControl(
 		minProtoVersion=tak_control.minProtoVersion,
@@ -199,7 +201,7 @@ def model2message(model: EventBase) -> TakMessage:
 	tak_event.ce = model.point.ce
 	tak_event.le = model.point.le
 
-	detail = model.detail
+	detail: Detail = model.detail
 	if detail is None:
 		return tak_message
 
@@ -238,6 +240,7 @@ def model2message(model: EventBase) -> TakMessage:
 
 			xml_string += instance.to_xml()
 
+		xml_string += detail.raw_xml
 		tak_detail.xmlDetail = xml_string.decode()
 
 	if encode_contact and detail.contact is not None:

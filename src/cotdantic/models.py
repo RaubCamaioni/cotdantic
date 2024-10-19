@@ -1,6 +1,9 @@
-from pydantic_xml import element, attr, computed_attr
-from typing import TypeVar, Generic, Optional, Union, Any
-from functools import partial
+from typing import TypeVar, Generic, Optional, Union, Any, List, get_args
+from pydantic_xml import element, attr, xml_field_serializer
+from pydantic_xml.element import XmlElementWriter
+from pydantic_xml.model import XmlEntityInfo
+from functools import partial, cache
+import xml.etree.ElementTree as ET
 from pydantic import Field
 from uuid import uuid4
 import pydantic_xml
@@ -38,7 +41,9 @@ def epoch2iso(epoch: int):
 
 
 def iso2epoch(iso: str) -> int:
-	time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
+	time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(
+		tzinfo=datetime.timezone.utc
+	)
 	return int(time.timestamp() * 1000)
 
 
@@ -198,8 +203,12 @@ class Color(CotBase, tag='color'):
 	argb: Optional[int] = attr(default=None)
 
 
+class UniqueID(CotBase, tag='uid'):
+	droid: Optional[str] = attr(default=None, name='Droid')
+
+
 class Detail(CotBase, tag='detail'):
-	raw_xml: str = Field(exclude=True, default='')
+	raw_xml: bytes = Field(exclude=False, default=b'')
 	contact: Optional[Contact] = element(default=None)
 	chat: Optional[Chat] = element(default=None)
 	link: Optional[Link] = element(default=None)
@@ -223,6 +232,33 @@ class Detail(CotBase, tag='detail'):
 	planning: Optional[Planning] = element(default=None)
 	remarks: Optional[Remarks] = element(default=None)
 	color: Optional[Color] = element(default=None)
+	uid: Optional[UniqueID] = element(default=None)
+
+	@classmethod
+	@cache
+	def tags(cls) -> List[str]:
+		detail_tags = []
+		for _, info in cls.model_fields.items():
+			if not isinstance(info, XmlEntityInfo):
+				continue
+			types_in_union = get_args(info.annotation)
+			custom_type = types_in_union[0]
+			detail_tags.append(custom_type.__xml_tag__)
+		return detail_tags
+
+	@xml_field_serializer('raw_xml')
+	def serialize_detail_with_string(
+		self, element: XmlElementWriter, value: bytes, field_name: str
+	) -> None:
+		if len(value) == 0:
+			return
+
+		for child in ET.fromstring(value.decode()).iter():
+			child_element = element.make_element(tag=child.tag, nsmap=None)
+			for key, val in child.attrib.items():
+				child_element.set_attribute(key, val)
+			child_element.set_text(child.text)
+			element.append_element(child_element)
 
 
 class TakControl(CotBase):
