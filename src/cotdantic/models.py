@@ -2,7 +2,7 @@ from typing import TypeVar, Generic, Optional, Union, Any, List, get_args
 from pydantic_xml import element, attr, xml_field_serializer
 from pydantic_xml.element import XmlElementWriter
 from pydantic_xml.model import XmlEntityInfo
-from functools import partial, cache
+from functools import partial, lru_cache
 import xml.etree.ElementTree as ET
 from pydantic import Field
 from uuid import uuid4
@@ -235,7 +235,7 @@ class Detail(CotBase, tag='detail'):
 	uid: Optional[UniqueID] = element(default=None)
 
 	@classmethod
-	@cache
+	@lru_cache
 	def tags(cls) -> List[str]:
 		detail_tags = []
 		for _, info in cls.model_fields.items():
