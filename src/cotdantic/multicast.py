@@ -5,6 +5,9 @@ import platform
 import traceback
 import socket
 import select
+import logging
+
+log = logging.getLogger(__name__)
 
 UDP_MAX_LEN = 65507
 
@@ -113,8 +116,8 @@ class MulticastListener:
 			try:
 				observer(data, server)
 			except Exception as e:
-				print(f'Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}')
-				traceback.print_exc()
+				log.error(f'Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}')
+				log.error(traceback.format_exc())
 				self.remove_observer(observer)
 				continue
 
@@ -158,7 +161,8 @@ class TcpListener:
 	def __init__(self, address: str, port: int):
 		self.address = address
 		self.port = port
-		self.sock: socket.socket = None
+		self.recv_sock: socket.socket = None
+		self.send_sock: socket.socket = None
 		self.select_event = SelectEvent()
 		self.processing_thread: Union[Thread, None] = None
 		self.observers: List[Callable[[bytes], None]] = []
@@ -173,9 +177,9 @@ class TcpListener:
 		self.observers.remove(func)
 
 	def _connect(self):
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.sock.bind((self.address, self.port))
-		self.sock.listen()
+		self.recv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.recv_sock.bind((self.address, self.port))
+		self.recv_sock.listen()
 
 	def process_observers(self, data, server):
 		"""process observer functions"""
@@ -183,8 +187,8 @@ class TcpListener:
 			try:
 				observer(data, server)
 			except Exception as e:
-				print(f'Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}')
-				traceback.print_exc()
+				log.error(f'Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}')
+				log.error(traceback.format_exc())
 				self.remove_observer(observer)
 				continue
 
@@ -194,11 +198,11 @@ class TcpListener:
 		self._connect()
 
 		def _publisher():
-			with self.sock:
+			with self.recv_sock:
 				while True:
-					if self.select_event.wait(self.sock):
+					if self.select_event.wait(self.recv_sock):
 						break
-					conn, server = self.sock.accept()
+					conn, server = self.recv_sock.accept()
 					with conn:
 						data = []
 						while True:
@@ -216,6 +220,13 @@ class TcpListener:
 
 		return self
 
+	def send(self, data: bytes, server: Tuple[str, int]):
+		"""send bytes using tcp"""
+		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+			sock.settimeout(5)
+			sock.connect(server)
+			sock.sendall(data)
+
 	def stop(self):
 		"""stop publishing thread and close socket"""
 
@@ -225,7 +236,7 @@ class TcpListener:
 			self.processing_thread.join(5)
 
 		self.select_event.close()
-		self.sock.close()
+		self.recv_sock.close()
 
 	def __enter__(self):
 		self.start()

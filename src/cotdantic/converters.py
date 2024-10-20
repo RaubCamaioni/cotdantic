@@ -1,35 +1,35 @@
 from .models import (
-	EventBase,
-	Event,
-	Point,
-	Contact,
-	Group,
-	Status,
-	Takv,
 	PrecisionLocation,
+	TakControl,
+	epoch2iso,
+	EventBase,
+	iso2epoch,
+	Contact,
+	CotBase,
+	Status,
 	Detail,
 	Track,
-	TakControl,
-	CotBase,
-	epoch2iso,
-	iso2epoch,
+	Event,
+	Point,
+	Group,
+	Takv,
 )
 
 import xml.etree.ElementTree as ET
 from typing import get_args
 
 from takproto import parse_proto, xml2proto
-from takproto.proto import TakMessage
 from takproto.functions import msg2proto
+from takproto.proto import TakMessage
 
 PROTO_KNOWN_ELEMENTS = {
 	# 'contact', # check non-standard values
-	'group',
-	'precision_location',  # sometime in details
 	# 'status', # check non-standard values
-	'takv',
+	'precision_location',  # sometime in details
+	'raw_xml',
+	'group',
 	'track',
-	'raw_xml',  # do not encode
+	'takv',
 }
 
 
@@ -126,14 +126,13 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 
 	raw_xml = f'<detail>{proto_detail.xmlDetail}</detail>'
 	detail: Detail = custom_type.from_xml(raw_xml)
-	detail.contact = (
-		detail.contact or contact
-	)  # TODO: might require combine detail and proto values?
+
+	detail.precision_location = detail.precision_location or precision_location
+	detail.contact = detail.contact or contact
+	detail.status = detail.status or status
 	detail.group = detail.group or group
 	detail.track = track
-	detail.status = detail.status or status
 	detail.takv = takv
-	detail.precision_location = detail.precision_location or precision_location
 
 	root = ET.fromstring(raw_xml)
 	tags = {child.tag for child in root} - set(detail.tags())

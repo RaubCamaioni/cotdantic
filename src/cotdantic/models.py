@@ -69,8 +69,8 @@ class Contact(CotBase, tag='contact'):
 
 
 class Link(CotBase, tag='link'):
-	uid: Optional[str] = attr(default=None)
 	type: Optional[str] = attr(default=None)
+	uid: Optional[str] = attr(default=None)
 	parent_callsign: Optional[str] = attr(default=None)
 	relation: Optional[str] = attr(default=None)
 	production_time: Optional[str] = attr(default=None)
@@ -160,7 +160,7 @@ class Remarks(CotBase, tag='remarks'):
 	source: Optional[str] = attr(default=None)
 	source_id: Optional[str] = attr(name='sourceID', default=None)
 	to: Optional[str] = attr(default=None)
-	time: Optional[str] = attr(default=None)
+	time: Optional[str] = attr(default_factory=isotime)
 
 
 class ServerDestination(CotBase, tag='__serverdestination'):
@@ -168,18 +168,18 @@ class ServerDestination(CotBase, tag='__serverdestination'):
 
 
 class ChatGroup(CotBase, tag='chatgrp'):
+	id: Optional[str] = attr(default=None)
 	uid0: Optional[str] = attr(default=None)
 	uid1: Optional[str] = attr(default=None)
-	id: Optional[str] = attr(default=None)
 
 
 class Chat(CotBase, tag='__chat'):
-	parent: Optional[str] = attr(default=None)
+	id: Optional[str] = attr(default=None)
+	chatroom: Optional[str] = attr(default=None)
+	sender_callsign: Optional[str] = attr(name='senderCallsign', default=None)
 	group_owner: Optional[bool] = attr(name='groupOwner', default=None)
 	message_id: Optional[str] = attr(name='messageId', default=None)
-	chatroom: Optional[str] = attr(default=None)
-	id: Optional[str] = attr(default=None)
-	sender_callsign: Optional[str] = attr(name='senderCallsign', default=None)
+	parent: Optional[str] = attr(default=None)
 	chatgrp: Optional[ChatGroup] = element(default=None)
 
 
