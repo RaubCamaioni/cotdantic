@@ -13,6 +13,7 @@ import logging
 import curses
 import time
 from itertools import islice
+import platform
 
 log = logging.getLogger(__name__)
 print_lock = Lock()
@@ -92,6 +93,10 @@ class Cockpit:
 		self.stdscr = stdscr
 		self.stdscr.clear()
 		self.h, self.w = stdscr.getmaxyx()
+
+		if platform.system() == 'Windows':
+			self.h = self.h - 1
+			self.w = self.w - 1
 
 		self.ht = self.h - self.h // 3
 		self.hb = self.h - self.ht
@@ -182,9 +187,7 @@ def to_console(
 	pad.print(f'{proto_reconstructed}\n')
 
 	pad.print(f'xml reconstructed ({len(xml_reconstructed)} bytes)')
-	pad.print(
-		f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n"
-	)
+	pad.print(f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n")
 
 	if model.detail.raw_xml:
 		pad.print(f'unknown tags: {model.detail.raw_xml}')
