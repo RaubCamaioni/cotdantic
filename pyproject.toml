@@ -10,7 +10,13 @@ requires-python = ">=3.7"
 description = "Pythonic coursor-on-target xml/protobuf generation using pydantic"
 readme = "README.md"
 keywords = [ "cot", "coursor", "target",]
-dependencies = [ "takproto>=3.0.0", "pydantic_xml>=2.0.0", "lxml>=5.3.0", "toml",]
+dependencies = [
+    "takproto>=3.0.0",
+    "pydantic_xml>=2.0.0",
+    "lxml>=5.3.0",
+    "toml",
+    "windows-curses; sys_platform == 'win32'", 
+]
 
 [[project.authors]]
 name = "Raub Camaioni"
