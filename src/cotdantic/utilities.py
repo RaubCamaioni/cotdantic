@@ -1,5 +1,5 @@
-from .multicast import TcpListener
 from .cot_types import atom
+from . import LOCATION
 from typing import Tuple
 from .models import *
 import uuid
@@ -8,7 +8,7 @@ import uuid
 def pli_cot(address: str, port: int, unicast: str) -> Event:
 	uid = f'cotdantic-{uuid.getnode()}'
 	cot_type = str(atom.friend.ground.unit.combat.infantry)
-	point = Point(lat=38.691420, lon=-77.134600)
+	point = Point(lat=LOCATION[0], lon=LOCATION[1])
 	contact = Contact(callsign='CotDantic', endpoint=f'{address}:{port}:{unicast}')
 	group = Group(name='Cyan', role='Team Member')
 	detail = Detail(contact=contact, group=group)
@@ -30,7 +30,7 @@ def echo_chat(sender: Event):
 	uid = f'GeoChat.{cotdantic_uid}.{sender_uid}.{message_id}'
 
 	from_type = str(atom.friend.ground.unit.combat.infantry)
-	point = Point(lat=38.691420, lon=-77.134600)
+	point = Point(lat=LOCATION[0], lon=LOCATION[1])
 	link = Link(type=from_type, uid=cotdantic_uid, relation='p-p')
 	chatgrp = ChatGroup(
 		id=cotdantic_uid,
@@ -83,7 +83,7 @@ def ack_message(chat_event: Event) -> Tuple[Event, Event]:
 		chatgrp=chatgrp,
 	)
 	detail = Detail(chat=chat, link=link)
-	point = Point(lat=38.691420, lon=-77.134600)
+	point = Point(lat=LOCATION[0], lon=LOCATION[1])
 	event = Event(
 		uid=chat_event.detail.chat.message_id,
 		how='h-g-i-g-o',

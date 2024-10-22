@@ -20,6 +20,8 @@ from .models import (
 from . import converters
 from .cot_types import atom
 
+LOCATION = (38.691420, -77.134600)
+
 
 def __event_to_bytes(self: EventBase) -> bytes:
 	return converters.model2proto(self)

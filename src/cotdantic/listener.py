@@ -1,19 +1,16 @@
 from .multicast import MulticastListener, TcpListener
 from .converters import is_xml, xml2proto, is_proto
-from .contacts import *
-from .utilities import *
+from .windows import Pad, PadHandler
 from contextlib import ExitStack
 from .cot_types import atom
 from threading import Lock
 from typing import Tuple
+from .utilities import *
+from .contacts import *
 from .models import *
-from collections import deque
-import textwrap
 import logging
 import curses
 import time
-from itertools import islice
-import platform
 
 log = logging.getLogger(__name__)
 print_lock = Lock()
@@ -27,131 +24,13 @@ def lock_decorator(func):
 	return inner
 
 
-class Pad:
-	def __init__(self, height, width, title=None):
-		self.title = title or ''
-		self.pad = curses.newpad(height, width)
-		self.max_x = width - 2
-		self.max_y = height - 2
-		self._text = deque(maxlen=1000)
-		self.selected = False
-		self.pause_updates = False
-
-	def toggle_pause(self):
-		self.pause_updates = not self.pause_updates
-
-	def border(self):
-		self.pad.border()
-		self.pad.move(0, 5)
-		attr = 1 if self.selected else 0
-		attr = 2 if self.pause_updates else attr
-		self.pad.addnstr(self.title, self.max_x, curses.color_pair(attr))
-
-	def clear(self):
-		if self.pause_updates:
-			return
-
-		self.pad.clear()
-
-	def erase(self):
-		if self.pause_updates:
-			return
-
-		self.pad.erase()
-
-	def refresh(self, x1, y1, x2, y2, x3, y3):
-		self.pad.refresh(x1, y1, x2, y2, x3, y3)
-
-	def print(self, text: str):
-		split_newline = text.split('\n')
-		for newline in split_newline:
-			if newline == '':
-				self._text.append('')
-				continue
-			split_wrapped = textwrap.wrap(newline, width=self.max_x)
-			for line in split_wrapped:
-				self._text.append(line)
-
-	def render(self):
-		if self.pause_updates:
-			return
-
-		length = len(self._text)
-		self.current_line = 1
-		for line in islice(self._text, max(length - self.max_y, 0), None):
-			self.pad.move(self.current_line, 1)
-			self.pad.addnstr(line, self.max_x)
-			self.current_line += 1
-
-
-class Cockpit:
-	def __init__(self, stdscr: curses.window):
-		curses.use_default_colors()
-		curses.curs_set(0)
-		curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
-		curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_RED)
-		self.stdscr = stdscr
-		self.stdscr.clear()
-		self.h, self.w = stdscr.getmaxyx()
-
-		if platform.system() == 'Windows':
-			self.h = self.h - 1
-			self.w = self.w - 1
-
-		self.ht = self.h - self.h // 3
-		self.hb = self.h - self.ht
-		self.wl = self.w // 3
-		self.wr = self.w - self.wl
-
-		self.topa = Pad(self.ht, self.w, 'Situational Awareness')
-		self.botl = Pad(self.hb, self.wl, 'Contacts')
-		self.botr = Pad(self.hb, self.wr - 1, 'Chat')
-
-		self.selected = 0
-		self.update_selected()
-
-	def next_select(self, next: int = 1):
-		self.selected = (self.selected + next) % 3
-		self.update_selected()
-
-	def update_selected(self):
-		self.topa.selected = bool(0 == self.selected)
-		self.botl.selected = bool(1 == self.selected)
-		self.botr.selected = bool(2 == self.selected)
-
-	def clear(self):
-		self.topa.clear()
-		self.botl.clear()
-		self.botr.clear()
-
-	def erase(self):
-		self.topa.erase()
-		self.botl.erase()
-		self.botr.erase()
-
-	def border(self):
-		self.topa.border()
-		self.botl.border()
-		self.botr.border()
-
-	def refresh(self):
-		self.erase()
-		self.border()
-		self.topa.render()
-		self.botl.render()
-		self.botr.render()
-
-		self.topa.refresh(0, 0, 0, 0, self.ht, self.w)
-		self.botl.refresh(0, 0, self.ht, 0, self.h, self.wl)
-		self.botr.refresh(0, 0, self.ht, self.wl + 1, self.h, self.w)
-
-
 @lock_decorator
-def to_console(
+def to_pad(
 	data: bytes,
 	server: Tuple[str, int],
 	pad: Pad,
-	who: str = 'unknown',
+	source: str = 'unknown',
+	debug: bool = False,
 ):
 	xml_original = None
 	xml_reconstructed = None
@@ -165,29 +44,35 @@ def to_console(
 		model = Event.from_xml(data)
 		proto_reconstructed = model.to_bytes()
 		xml_reconstructed = model.to_xml()
-	else:
+	elif is_proto(data):
 		data_type_string = 'protobuf'
 		proto_original = data
 		model = Event.from_bytes(proto_original)
 		proto_reconstructed = model.to_bytes()
 		xml_reconstructed = model.to_xml()
+	else:
+		return
 
-	who_string = f'  {who}-captured {data_type_string}  '
+	who_string = f'  {source}-captured {data_type_string}  '
 	pad.print('-' * (pad.max_x - len(who_string)) + who_string)
 
-	if proto_original is not None and proto_original != proto_reconstructed:
+	if debug and proto_original is not None and proto_original != proto_reconstructed:
 		pad.print(f'proto_original ({len(proto_original)} bytes) != reconstructed proto')
 		pad.print(f'{proto_original}\n')
 
-	if xml_original is not None and xml_original != xml_reconstructed:
+	if debug and xml_original is not None and xml_original != xml_reconstructed:
 		pad.print(f'xml_original ({len(xml_original)} bytes) != reconstructed xml')
 		pad.print(f'{xml_original}\n')
 
-	pad.print(f'proto reconstructed ({len(proto_reconstructed)} bytes)')
-	pad.print(f'{proto_reconstructed}\n')
+	if debug:
+		pad.print(f'proto reconstructed ({len(proto_reconstructed)} bytes)')
+		pad.print(f'{proto_reconstructed}\n')
 
-	pad.print(f'xml reconstructed ({len(xml_reconstructed)} bytes)')
-	pad.print(f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n")
+	if debug:
+		pad.print(f'xml reconstructed ({len(xml_reconstructed)} bytes)')
+	pad.print(
+		f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n"
+	)
 
 	if model.detail.raw_xml:
 		pad.print(f'unknown tags: {model.detail.raw_xml}')
@@ -216,7 +101,7 @@ def _cot_listener(stdscr):
 	parser.add_argument('--ginterface', type=str, default='0.0.0.0', help='Chat interface')
 	parser.add_argument('--uaddress', type=str, default='0.0.0.0', help='Direct address')
 	parser.add_argument('--uport', type=int, default=4242, help='Direct port')
-	parser.add_argument('--source', type=str, default=None, help='Filter for messages from source')
+	parser.add_argument('--debug', type=bool, default=False, help='Print debug information')
 	parser.add_argument(
 		'--unicast',
 		default='tcp',
@@ -234,12 +119,13 @@ def _cot_listener(stdscr):
 	gport = args.gport
 	uport = args.uport
 	unicast = args.unicast
+	debug = args.debug
 
 	converter = Converter()
 	contacts = Contacts()
 	event = pli_cot(uaddress, uport, unicast=unicast)
 
-	cockpit = Cockpit(stdscr)
+	cockpit = PadHandler(stdscr)
 
 	with ExitStack() as stack:
 		multicast = stack.enter_context(MulticastListener(maddress, mport, minterface))
@@ -247,10 +133,14 @@ def _cot_listener(stdscr):
 		unicast_udp = stack.enter_context(MulticastListener(uaddress, uport))
 		unicast_tcp = stack.enter_context(TcpListener(uaddress, uport))
 
-		multicast.add_observer(partial(to_console, pad=cockpit.topa, who='multicast'))
-		group_chat.add_observer(partial(to_console, pad=cockpit.topa, who='groupchat'))
-		unicast_udp.add_observer(partial(to_console, pad=cockpit.topa, who='unicast_udp'))
-		unicast_tcp.add_observer(partial(to_console, pad=cockpit.topa, who='unicast_tcp'))
+		multicast.add_observer(partial(to_pad, pad=cockpit.topa, source='multicast', debug=debug))
+		group_chat.add_observer(partial(to_pad, pad=cockpit.topa, source='groupchat', debug=debug))
+		unicast_udp.add_observer(
+			partial(to_pad, pad=cockpit.topa, source='unicast_udp', debug=debug)
+		)
+		unicast_tcp.add_observer(
+			partial(to_pad, pad=cockpit.topa, source='unicast_tcp', debug=debug)
+		)
 
 		group_chat.add_observer(partial(chat_ack, socket=unicast_tcp, pad=cockpit.botr))
 		unicast_udp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=cockpit.botr))
@@ -270,14 +160,15 @@ def _cot_listener(stdscr):
 		stdscr.nodelay(True)
 		while True:
 			key = stdscr.getch()
+
 			if key == ord('q'):
 				break
-			elif key == ord('p'):
-				cockpit.topa.toggle_pause()
 			elif key == curses.KEY_RIGHT:
 				cockpit.next_select()
 			elif key == curses.KEY_LEFT:
 				cockpit.next_select(next=-1)
+
+			cockpit.update(key)
 
 			if time.time() - last_send > 10:
 				last_send = time.time()
@@ -287,7 +178,7 @@ def _cot_listener(stdscr):
 				multicast.send(event.to_bytes())
 
 			cockpit.refresh()
-			time.sleep(0.05)
+			time.sleep(0.01)
 
 
 def cot_listener():
