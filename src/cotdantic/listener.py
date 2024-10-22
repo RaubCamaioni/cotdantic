@@ -89,69 +89,53 @@ def chat_ack(data: bytes, server: Tuple[str, int], socket: TcpListener, pad: Pad
 		socket.send(echo_chat(event).to_bytes(), (server[0], 4242))
 
 
-def _cot_listener(stdscr):
-	import argparse
-
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--maddress', type=str, default='239.2.3.1', help='SA address')
-	parser.add_argument('--mport', type=int, default=6969, help='SA port')
-	parser.add_argument('--minterface', type=str, default='0.0.0.0', help='SA interface')
-	parser.add_argument('--gaddress', type=str, default='224.10.10.1', help='Chat address')
-	parser.add_argument('--gport', type=int, default=17012, help='Chat port')
-	parser.add_argument('--ginterface', type=str, default='0.0.0.0', help='Chat interface')
-	parser.add_argument('--uaddress', type=str, default='0.0.0.0', help='Direct address')
-	parser.add_argument('--uport', type=int, default=4242, help='Direct port')
-	parser.add_argument('--debug', type=bool, default=False, help='Print debug information')
-	parser.add_argument(
-		'--unicast',
-		default='tcp',
-		choices=['tcp', 'udp'],
-		help='Set endpoint communication protocol',
-	)
-	args = parser.parse_args()
-
+def _cli_tak(stdscr, args):
 	maddress = args.maddress
-	gaddress = args.gaddress
-	uaddress = args.uaddress
 	minterface = args.minterface
-	ginterface = args.ginterface
 	mport = args.mport
+
+	gaddress = args.gaddress
+	ginterface = args.ginterface
 	gport = args.gport
+
+	address = args.address
 	uport = args.uport
+	tport = args.tport
+
 	unicast = args.unicast
 	debug = args.debug
 
 	converter = Converter()
 	contacts = Contacts()
-	event = pli_cot(uaddress, uport, unicast=unicast)
+	event = pli_cot(address, tport, unicast=unicast)
 
-	cockpit = PadHandler(stdscr)
+	phandler = PadHandler(stdscr)
 
 	with ExitStack() as stack:
 		multicast = stack.enter_context(MulticastListener(maddress, mport, minterface))
 		group_chat = stack.enter_context(MulticastListener(gaddress, gport, ginterface))
-		unicast_udp = stack.enter_context(MulticastListener(uaddress, uport))
-		unicast_tcp = stack.enter_context(TcpListener(uaddress, uport))
+		unicast_udp = stack.enter_context(MulticastListener(address, uport))
+		unicast_tcp = stack.enter_context(TcpListener(address, tport))
 
-		multicast.add_observer(partial(to_pad, pad=cockpit.topa, source='multicast', debug=debug))
-		group_chat.add_observer(partial(to_pad, pad=cockpit.topa, source='groupchat', debug=debug))
+		multicast.add_observer(partial(to_pad, pad=phandler.topa, source='multicast', debug=debug))
+		group_chat.add_observer(partial(to_pad, pad=phandler.topa, source='groupchat', debug=debug))
 		unicast_udp.add_observer(
-			partial(to_pad, pad=cockpit.topa, source='unicast_udp', debug=debug)
+			partial(to_pad, pad=phandler.topa, source='unicast_udp', debug=debug)
 		)
 		unicast_tcp.add_observer(
-			partial(to_pad, pad=cockpit.topa, source='unicast_tcp', debug=debug)
+			partial(to_pad, pad=phandler.topa, source='unicast_tcp', debug=debug)
 		)
 
-		group_chat.add_observer(partial(chat_ack, socket=unicast_tcp, pad=cockpit.botr))
-		unicast_udp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=cockpit.botr))
-		unicast_tcp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=cockpit.botr))
+		group_chat.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr))
+		unicast_udp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr))
+		unicast_tcp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr))
 
 		multicast.add_observer(converter.process_observers)
 		converter.add_observer(contacts.pli_listener)
 
 		def contact_display_update(contacts: Contacts):
-			cockpit.botl._text = []
-			cockpit.botl.print(f'{contacts}')
+			phandler.botl._text = []
+			phandler.botl.print(f'{contacts}')
 
 		contacts.add_observer(contact_display_update)
 
@@ -164,11 +148,11 @@ def _cot_listener(stdscr):
 			if key == ord('q'):
 				break
 			elif key == curses.KEY_RIGHT:
-				cockpit.next_select()
+				phandler.next_select()
 			elif key == curses.KEY_LEFT:
-				cockpit.next_select(next=-1)
+				phandler.next_select(next=-1)
 
-			cockpit.update(key)
+			phandler.update(key)
 
 			if time.time() - last_send > 10:
 				last_send = time.time()
@@ -177,12 +161,29 @@ def _cot_listener(stdscr):
 				event.stale = isotime(minutes=5)
 				multicast.send(event.to_bytes())
 
-			cockpit.refresh()
+			phandler.refresh()
 			time.sleep(0.01)
 
 
-def cot_listener():
+def cli_tak():
 	from contextlib import suppress
+	import argparse
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--maddress', type=str, default='239.2.3.1', help='SA address')
+	parser.add_argument('--mport', type=int, default=6969, help='SA port')
+	parser.add_argument('--minterface', type=str, default='0.0.0.0', help='SA interface')
+	parser.add_argument('--gaddress', type=str, default='224.10.10.1', help='Chat address')
+	parser.add_argument('--gport', type=int, default=17012, help='Chat port')
+	parser.add_argument('--ginterface', type=str, default='0.0.0.0', help='Chat interface')
+	parser.add_argument('--address', type=str, default='0.0.0.0', help='TCP/UDP address')
+	parser.add_argument('--uport', type=int, default=17012, help='TCP port')
+	parser.add_argument('--tport', type=int, default=4242, help='UDP port')
+	parser.add_argument('--debug', type=bool, default=False, help='Print debug information')
+	parser.add_argument(
+		'--unicast', default='tcp', choices=['tcp', 'udp'], help='COT Contact endpoint'
+	)
+	args = parser.parse_args()
 
 	with suppress(KeyboardInterrupt):
-		curses.wrapper(_cot_listener)
+		curses.wrapper(_cli_tak, args)

@@ -19,12 +19,14 @@ Provides human readable cot type construction.
 ## Common Utilities
 
 COT is sent with TCP/UDP and multicast.  
-This package includes a simple multicast listener that automatically parses XML/Protobuf messages.  
-The captured messages are printed in their XML/Protobuf representations.  
+This package includes a simple TAK cli tool that automatically parses XML/Protobuf messages.  
+The captured messages are printed in their XML/Protobuf representations (--debug).  
+Contacts on the network a listed in the contacts window.  
+Chat messages are listed in the chat window, messages are automatically echoed back to sender.  
 ```
-cot-listener --help
-usage: cot-listener [-h] [--maddress MADDRESS] [--mport MPORT] [--minterface MINTERFACE] [--gaddress GADDRESS] [--gport GPORT] [--ginterface GINTERFACE] [--uaddress UADDRESS] [--uport UPORT] [--source SOURCE]
-                    [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+cli-tak --help
+usage: cli-tak [-h] [--maddress MADDRESS] [--mport MPORT] [--minterface MINTERFACE] [--gaddress GADDRESS] [--gport GPORT] [--ginterface GINTERFACE] [--address ADDRESS] [--uport UPORT] [--tport TPORT] [--debug DEBUG]
+               [--unicast {tcp,udp}]
 
 options:
   -h, --help            show this help message and exit
@@ -36,11 +38,11 @@ options:
   --gport GPORT         Chat port
   --ginterface GINTERFACE
                         Chat interface
-  --uaddress UADDRESS   Direct address
-  --uport UPORT         Direct port
-  --source SOURCE       Filter for messages from source
-  --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                        Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  --address ADDRESS     TCP/UDP address
+  --uport UPORT         TCP port
+  --tport TPORT         UDP port
+  --debug DEBUG         Print debug information
+  --unicast {tcp,udp}   COT Contact endpoint
 ```
 
 A docker build is included for multicast docker testing.  
