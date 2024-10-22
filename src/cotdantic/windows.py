@@ -90,7 +90,7 @@ class PadHandler:
 			self.h = self.h - 1
 			self.w = self.w - 1
 
-		self.ht = self.h - self.h // 3
+		self.ht = self.h - self.h // 4
 		self.hb = self.h - self.ht
 		self.wl = self.w // 3
 		self.wr = self.w - self.wl

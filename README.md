@@ -1,9 +1,9 @@
 # COT(PY)DANTIC
 
 Pythonic generation of Coursor-On-Target (COT) messages (xml/protobuf).  
-Provides pydantic_xml models with type completion / verification.  
-Allows easy transformation between xml and protobuf.  
-Provides human readable cot type construction.  
+Provides pydantic_xml models with type completion and verification.  
+Easy transformation between xml and protobuf.  
+Human readable cot type construction.  
 
 ## COT/TAK Resources
 
@@ -16,13 +16,15 @@ Provides human readable cot type construction.
 [dev_guide](https://nps.edu/documents/104517539/109705106/COT+Developer+Guide.pdf/cb125ac8-1ed1-477b-a914-7557c356a303#:~:text=What%20is%20Cursor-on-Target?%20In%20a%20nutshell,): developer outline of COT messages  
 [tak_miter](https://www.mitre.org/sites/default/files/pdf/09_4937.pdf): in-depth cot descriptions  
 
-## Common Utilities
+## CLI-TAK
 
-COT is sent with TCP/UDP and multicast.  
-This package includes a simple TAK cli tool that automatically parses XML/Protobuf messages.  
-The captured messages are printed in their XML/Protobuf representations (--debug).  
-Contacts on the network a listed in the contacts window.  
+This package includes a simple curses cli tool.  
+Situational Awareness (SA) messages are printed in the main window.  
+Contacts are listed in the contacts window.  
 Chat messages are listed in the chat window, messages are automatically echoed back to sender.  
+Select window with left, right, arrow keys.  
+Scroll window with up, down, arrow keys.  
+Scroll to end with backspace key.  
 ```
 cli-tak --help
 usage: cli-tak [-h] [--maddress MADDRESS] [--mport MPORT] [--minterface MINTERFACE] [--gaddress GADDRESS] [--gport GPORT] [--ginterface GINTERFACE] [--address ADDRESS] [--uport UPORT] [--tport TPORT] [--debug DEBUG]
@@ -44,6 +46,8 @@ options:
   --debug DEBUG         Print debug information
   --unicast {tcp,udp}   COT Contact endpoint
 ```
+
+![cli-tak](/images/cli_tak.png)
 
 A docker build is included for multicast docker testing.  
 For multicast to reach inside a docker network=host must be set.  
