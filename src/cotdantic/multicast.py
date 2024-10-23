@@ -1,4 +1,4 @@
-from typing import List, Callable, Tuple, Union
+from typing import List, Callable, Tuple, Union, Optional
 from ipaddress import ip_network, ip_address
 from threading import Thread
 import platform
@@ -93,7 +93,7 @@ class MulticastListener:
 			)
 
 		else:
-			self.sock.bind((self.address, self.port))
+			self.sock.bind((self.network_adapter, self.port))
 
 	def stop(self):
 		"""stop publishing thread and close socket"""
@@ -106,9 +106,10 @@ class MulticastListener:
 		self.select_event.close()
 		self.sock.close()
 
-	def send(self, data: bytes):
+	def send(self, data: bytes, server: Optional[Tuple[str, int]] = None):
 		"""send bytes over multicast"""
-		self.sock.sendto(data, (self.address, self.port))
+		server = server or (self.address, self.port)
+		self.sock.sendto(data, server)
 
 	def process_observers(self, data, server):
 		"""process observer functions"""
