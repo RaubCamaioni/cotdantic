@@ -41,9 +41,7 @@ def epoch2iso(epoch: int):
 
 
 def iso2epoch(iso: str) -> int:
-	time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(
-		tzinfo=datetime.timezone.utc
-	)
+	time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
 	return int(time.timestamp() * 1000)
 
 
@@ -247,16 +245,16 @@ class Detail(CotBase, tag='detail'):
 		return detail_tags
 
 	@xml_field_serializer('raw_xml')
-	def serialize_detail_with_string(
-		self, element: XmlElementWriter, value: bytes, field_name: str
-	) -> None:
+	def serialize_detail_with_string(self, element: XmlElementWriter, value: bytes, field_name: str) -> None:
 		if len(value) == 0:
 			return
 
-		for child in ET.fromstring(value.decode()).iter():
+		for child in ET.fromstring(f'<_raw>{value.decode()}</_raw>'):
 			child_element = element.make_element(tag=child.tag, nsmap=None)
+
 			for key, val in child.attrib.items():
 				child_element.set_attribute(key, val)
+
 			child_element.set_text(child.text)
 			element.append_element(child_element)
 
