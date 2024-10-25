@@ -7,3 +7,4 @@ __pycache__/
 local/
 .pytest_cache/
 .ruff_cache
+.nox
