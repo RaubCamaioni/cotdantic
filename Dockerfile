@@ -8,4 +8,4 @@ COPY --from=build /usr/local/lib /usr/local/lib
 COPY --from=build /usr/local/bin /usr/local/bin
 COPY --from=build /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
-ENTRYPOINT ["cli-tak"]
+ENTRYPOINT ["cotdantic"]

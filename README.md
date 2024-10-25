@@ -16,38 +16,41 @@ Human readable cot type construction.
 [dev_guide](https://nps.edu/documents/104517539/109705106/COT+Developer+Guide.pdf/cb125ac8-1ed1-477b-a914-7557c356a303#:~:text=What%20is%20Cursor-on-Target?%20In%20a%20nutshell,): developer outline of COT messages  
 [tak_miter](https://www.mitre.org/sites/default/files/pdf/09_4937.pdf): in-depth cot descriptions  
 
-## CLI-TAK
+## COTDANTIC CLI Tool
 
-This package includes a simple curses cli tool.  
+This package includes a curses cli tool.  
 Situational Awareness (SA) messages are printed in the main window.  
 Contacts are listed in the contacts window.  
 Chat messages are listed in the chat window, messages are automatically echoed back to sender.  
 Select window with left, right, arrow keys.  
 Scroll window with up, down, arrow keys.  
 Scroll to end with backspace key.  
+Default gateway interface used by default.  
 ```
-cli-tak --help
-usage: cli-tak [-h] [--maddress MADDRESS] [--mport MPORT] [--minterface MINTERFACE] [--gaddress GADDRESS] [--gport GPORT] [--ginterface GINTERFACE] [--address ADDRESS] [--uport UPORT] [--tport TPORT] [--debug DEBUG]
-               [--unicast {tcp,udp}]
+cotdantic --help
+usage: cotdantic [-h] [--maddress MADDRESS] [--mport MPORT] [--minterface MINTERFACE] [--gaddress GADDRESS] [--gport GPORT] [--ginterface GINTERFACE] [--address ADDRESS] [--interface INTERFACE] [--uport UPORT]
+                 [--tport TPORT] [--debug DEBUG] [--unicast {tcp,udp}]
 
 options:
   -h, --help            show this help message and exit
-  --maddress MADDRESS   SA address
-  --mport MPORT         SA port
+  --maddress MADDRESS   SA address (default: 239.2.3.1)
+  --mport MPORT         SA port (default: 6969)
   --minterface MINTERFACE
-                        SA interface
-  --gaddress GADDRESS   Chat address
-  --gport GPORT         Chat port
+                        SA interface (default: default-gateway)
+  --gaddress GADDRESS   Chat address (default: 224.10.10.1)
+  --gport GPORT         Chat port (default: 17012)
   --ginterface GINTERFACE
-                        Chat interface
-  --address ADDRESS     TCP/UDP address
-  --uport UPORT         TCP port
-  --tport TPORT         UDP port
-  --debug DEBUG         Print debug information
-  --unicast {tcp,udp}   COT Contact endpoint
+                        Chat interface (default: default-gateway)
+  --address ADDRESS     default TCP/UDP send address (default: default-gateway)
+  --interface INTERFACE
+                        TCP/UDP bind interface (default: default-gateway)
+  --uport UPORT         TCP port (default: 17012)
+  --tport TPORT         UDP port (default: 4242)
+  --debug DEBUG         Print debug information (default: False)
+  --unicast {tcp,udp}   Endpoint protocol (default: tcp)
 ```
 
-![cli-tak](/images/cli_tak.png)
+![cli-tool](/images/cli_tool.png)
 
 A docker build is included for multicast docker testing.  
 For multicast to reach inside a docker network=host must be set.  

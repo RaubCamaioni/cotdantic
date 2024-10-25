@@ -3,6 +3,22 @@ from . import LOCATION
 from typing import Tuple
 from .models import *
 import uuid
+import netifaces
+
+
+def default_interface() -> str:
+	gateways = netifaces.gateways()
+	default_gateway = gateways['default'][netifaces.AF_INET][1]
+	return default_gateway
+
+
+def default_ip():
+	try:
+		interface_name = default_interface()
+		addresses = netifaces.ifaddresses(interface_name)
+		return addresses[netifaces.AF_INET][0]['addr']
+	except (ValueError, KeyError):
+		return '0.0.0.0'
 
 
 def pli_cot(address: str, port: int, unicast: str) -> Event:

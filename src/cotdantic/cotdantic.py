@@ -53,8 +53,7 @@ def to_pad(
 	else:
 		return
 
-	who_string = f'  {source}-captured {data_type_string}  '
-	pad.print('-' * (pad.max_x - len(who_string)) + who_string)
+	pad.print(f'\n{source}: {data_type_string}', 1)
 
 	if debug and proto_original is not None and proto_original != proto_reconstructed:
 		pad.print(f'proto_original ({len(proto_original)} bytes) != reconstructed proto')
@@ -70,24 +69,30 @@ def to_pad(
 
 	if debug:
 		pad.print(f'xml reconstructed ({len(xml_reconstructed)} bytes)')
-	pad.print(f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n")
+	pad.print(
+		f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n"
+	)
 
 	if model.detail.raw_xml:
 		pad.print(f'unknown tags: {model.detail.raw_xml}')
 
 
-def chat_ack(data: bytes, server: Tuple[str, int], socket: TcpListener, pad: Pad):
+def chat_ack(data: bytes, server: Tuple[str, int], socket: TcpListener, pad: Pad, ack: bool = True):
 	event = Event.from_bytes(data)
 
 	if 'GeoChat' in event.uid:
 		pad.print(f'{event.detail.chat.sender_callsign}: {event.detail.remarks.text}')
+
+		if not ack:
+			return
+
 		event1, event2 = ack_message(event)
 		socket.send(event1.to_bytes(), (server[0], 4242))
 		socket.send(event2.to_bytes(), (server[0], 4242))
 		socket.send(echo_chat(event).to_bytes(), (server[0], 4242))
 
 
-def _cli_tak(stdscr, args):
+def cotdantic(stdscr, args):
 	maddress = args.maddress
 	minterface = args.minterface
 	mport = args.mport
@@ -103,6 +108,7 @@ def _cli_tak(stdscr, args):
 
 	unicast = args.unicast
 	debug = args.debug
+	echo = args.echo
 
 	converter = Converter()
 	contacts = Contacts()
@@ -116,14 +122,14 @@ def _cli_tak(stdscr, args):
 		unicast_udp = stack.enter_context(MulticastListener(address, uport, interface))
 		unicast_tcp = stack.enter_context(TcpListener(address, tport))
 
-		multicast.add_observer(partial(to_pad, pad=phandler.topa, source='multicast', debug=debug))
-		group_chat.add_observer(partial(to_pad, pad=phandler.topa, source='groupchat', debug=debug))
-		unicast_udp.add_observer(partial(to_pad, pad=phandler.topa, source='unicast_udp', debug=debug))
-		unicast_tcp.add_observer(partial(to_pad, pad=phandler.topa, source='unicast_tcp', debug=debug))
+		multicast.add_observer(partial(to_pad, pad=phandler.topa, source='SA', debug=debug))
+		group_chat.add_observer(partial(to_pad, pad=phandler.topa, source='CHAT', debug=debug))
+		unicast_udp.add_observer(partial(to_pad, pad=phandler.topa, source='UDP', debug=debug))
+		unicast_tcp.add_observer(partial(to_pad, pad=phandler.topa, source='TCP', debug=debug))
 
-		group_chat.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr))
-		unicast_udp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr))
-		unicast_tcp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr))
+		group_chat.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr, ack=False))
+		unicast_udp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr, ack=echo))
+		unicast_tcp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr, ack=echo))
 
 		multicast.add_observer(converter.process_observers)
 		converter.add_observer(contacts.pli_listener)
@@ -160,24 +166,28 @@ def _cli_tak(stdscr, args):
 			time.sleep(0.01)
 
 
-def cli_tak():
+def main():
 	from contextlib import suppress
 	import argparse
 
-	parser = argparse.ArgumentParser()
+	ip = default_ip()
+	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--maddress', type=str, default='239.2.3.1', help='SA address')
 	parser.add_argument('--mport', type=int, default=6969, help='SA port')
-	parser.add_argument('--minterface', type=str, default='0.0.0.0', help='SA interface')
+	parser.add_argument('--minterface', type=str, default=ip, help='SA interface')
 	parser.add_argument('--gaddress', type=str, default='224.10.10.1', help='Chat address')
 	parser.add_argument('--gport', type=int, default=17012, help='Chat port')
-	parser.add_argument('--ginterface', type=str, default='0.0.0.0', help='Chat interface')
-	parser.add_argument('--address', type=str, default='0.0.0.0', help='default TCP/UDP send address')
-	parser.add_argument('--interface', type=str, default='0.0.0.0', help='TCP/UDP bind interface')
-	parser.add_argument('--uport', type=int, default=17012, help='TCP port')
-	parser.add_argument('--tport', type=int, default=4242, help='UDP port')
+	parser.add_argument('--ginterface', type=str, default=ip, help='Chat interface')
+	parser.add_argument('--address', type=str, default=ip, help='default TCP/UDP send address')
+	parser.add_argument('--interface', type=str, default=ip, help='TCP/UDP bind interface')
+	parser.add_argument('--uport', type=int, default=17012, help='UDP port')
+	parser.add_argument('--tport', type=int, default=4242, help='TCP port')
 	parser.add_argument('--debug', type=bool, default=False, help='Print debug information')
-	parser.add_argument('--unicast', default='tcp', choices=['tcp', 'udp'], help='COT Contact endpoint')
+	parser.add_argument(
+		'--unicast', default='tcp', choices=['tcp', 'udp'], help='Endpoint protocol'
+	)
+	parser.add_argument('--echo', action='store_true', help='Echo back direct messages')
 	args = parser.parse_args()
 
 	with suppress(KeyboardInterrupt):
-		curses.wrapper(_cli_tak, args)
+		curses.wrapper(cotdantic, args)

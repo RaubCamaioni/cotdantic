@@ -6,11 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "cotdantic"
 dynamic = ["version"]
 urls = {Homepage = "https://github.com/RaubCamaioni/cotdantic"}
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 description = "Pythonic coursor-on-target xml/protobuf generation using pydantic"
 readme = "README.md"
 keywords = [ "cot", "coursor", "target",]
 dependencies = [
+    "netifaces>=0.11.0",
     "takproto>=3.0.0",
     "pydantic_xml>=2.0.0",
     "lxml>=5.3.0",
@@ -31,11 +32,10 @@ name = "Raub Camaioni"
 file = "LICENSE"
 
 [project.optional-dependencies]
-testing = [ "pytest>=6.2.4",]
 dev = [ "pytest>=6.2.4", "pre-commit",]
 
 [project.scripts]
-cli-tak = "cotdantic.listener:cli_tak"
+cotdantic = "cotdantic.cotdantic:main"
 
 [tool.ruff]
 line-length = 100
