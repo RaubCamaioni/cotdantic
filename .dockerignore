@@ -1,8 +1,10 @@
 venv/
+.venv/
 build/
+dist/
 *egg-info/
 __pycache__/
 local/
 .pytest_cache/
-.github/
-test/
+.ruff_cache
+.nox
