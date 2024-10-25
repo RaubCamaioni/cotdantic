@@ -1,13 +1,11 @@
-from typing import List, Callable, Tuple, Union, Optional
-from ipaddress import ip_network, ip_address
+from typing import List, Callable, Tuple, Union, Optional, TypeVar, Generic
 from threading import Thread
 import platform
-import traceback
 import socket
 import select
-import logging
 
-log = logging.getLogger(__name__)
+T = TypeVar('T')
+
 
 UDP_MAX_LEN = 65507
 
@@ -30,7 +28,6 @@ class SelectEvent:
 			self.r.recv(1)
 
 	def wait(self, waitable):
-		"""return true if signaled to exit"""
 		readable, _, _ = select.select([waitable, self], [], [])
 		return self in readable
 
@@ -42,62 +39,68 @@ class SelectEvent:
 		return self.r.fileno()
 
 
-class MulticastListener:
-	"""binds to a multicast address and publishes messages to observers"""
+class Publisher(Generic[T]):
+	"""generic publisher parent class pattern"""
+
+	def __init__(self):
+		self.observers: List[Callable[[T], None]] = []
+
+	def clear_observers(self):
+		self.observers = []
+
+	def add_observer(self, func: Callable[[T], None]):
+		self.observers.append(func)
+
+	def remove_observer(self, func: Callable[[T], None]):
+		self.observers.remove(func)
+
+	def process_observers(self, data: T):
+		for observer in self.observers:
+			try:
+				observer(data)
+			except Exception:
+				self.remove_observer(observer)
+				continue
+
+
+class MulticastPublisher(Publisher[Tuple[bytes, Tuple[str, int]]]):
+	"""multicast socket to publisher pattern"""
 
 	def __init__(self, address: str, port: int, network_adapter: str = '0.0.0.0'):
-		"""create multicast socket store network configuration"""
+		super().__init__()
+
 		self.address = address
 		self.port = port
 		self.network_adapter = network_adapter
-		self.observers: List[Callable[[bytes], None]] = []
-		self.multicast = ip_address(self.address) in ip_network('224.0.0.0/4')
 
 		self.sock: socket.socket = None
 		self.select_event = SelectEvent()
 
 		self.processing_thread: Union[Thread, None] = None
 
-	def clear_observers(self):
-		self.observers = []
-
-	def add_observer(self, func: Callable[[bytes, Tuple[str, int]], None]):
-		self.observers.append(func)
-
-	def remove_observer(self, func: Callable[[bytes, Tuple[str, int]], None]):
-		self.observers.remove(func)
-
 	def _connect(self):
-		"""join multicast group address:port:adapter and bind socket"""
-
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**8)
 		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-		if self.multicast:
-			{
-				'Linux': lambda: self.sock.bind((self.address, self.port)),
-				'Windows': lambda: self.sock.bind((self.network_adapter, self.port)),
-			}.get(platform.system(), lambda: SystemError('unsupported system'))()
+		{
+			'Linux': lambda: self.sock.bind((self.address, self.port)),
+			'Windows': lambda: self.sock.bind((self.network_adapter, self.port)),
+		}.get(platform.system(), lambda: SystemError('unsupported system'))()
 
-			self.sock.setsockopt(
-				socket.IPPROTO_IP,
-				socket.IP_ADD_MEMBERSHIP,
-				socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
-			)
+		self.sock.setsockopt(
+			socket.IPPROTO_IP,
+			socket.IP_ADD_MEMBERSHIP,
+			socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
+		)
 
-			self.sock.setsockopt(
-				socket.IPPROTO_IP,
-				socket.IP_MULTICAST_IF,
-				socket.inet_aton(self.network_adapter),
-			)
-
-		else:
-			self.sock.bind((self.network_adapter, self.port))
+		self.sock.setsockopt(
+			socket.IPPROTO_IP,
+			socket.IP_MULTICAST_IF,
+			socket.inet_aton(self.network_adapter),
+		)
 
 	def stop(self):
-		"""stop publishing thread and close socket"""
-
 		self.select_event.set()
 
 		if self.processing_thread:
@@ -106,25 +109,10 @@ class MulticastListener:
 		self.select_event.close()
 		self.sock.close()
 
-	def send(self, data: bytes, server: Optional[Tuple[str, int]] = None):
-		"""send bytes over multicast"""
-		server = server or (self.address, self.port)
-		self.sock.sendto(data, server)
+	def send(self, data: bytes):
+		self.sock.sendto(data, (self.address, self.port))
 
-	def process_observers(self, data, server):
-		"""process observer functions"""
-		for observer in self.observers:
-			try:
-				observer(data, server)
-			except Exception as e:
-				log.error(f'Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}')
-				log.error(traceback.format_exc())
-				self.remove_observer(observer)
-				continue
-
-	def start(self) -> 'MulticastListener':
-		"""start multicast publisher"""
-
+	def start(self) -> 'MulticastPublisher':
 		self._connect()
 
 		def _publisher():
@@ -132,16 +120,13 @@ class MulticastListener:
 				while True:
 					if self.select_event.wait(self.sock):
 						break
+					self.process_observers(self.sock.recvfrom(UDP_MAX_LEN))
 
-					data, server = self.sock.recvfrom(UDP_MAX_LEN)
-					self.process_observers(data, server)
-
-				if self.multicast:
-					self.sock.setsockopt(
-						socket.IPPROTO_IP,
-						socket.IP_DROP_MEMBERSHIP,
-						socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
-					)
+				self.sock.setsockopt(
+					socket.IPPROTO_IP,
+					socket.IP_DROP_MEMBERSHIP,
+					socket.inet_aton(self.address) + socket.inet_aton(self.network_adapter),
+				)
 
 		self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
 		self.processing_thread.start()
@@ -158,44 +143,23 @@ class MulticastListener:
 			return True
 
 
-class TcpListener:
-	def __init__(self, address: str, port: int):
-		self.address = address
+class TcpListener(Publisher[Tuple[bytes, Tuple[str, int]]]):
+	"""tcp socket to publisher pattern"""
+
+	def __init__(self, port: int, network_adapter: str = '0.0.0.0'):
+		super().__init__()
 		self.port = port
+		self.network_adapter = network_adapter
 		self.recv_sock: socket.socket = None
-		self.send_sock: socket.socket = None
 		self.select_event = SelectEvent()
 		self.processing_thread: Union[Thread, None] = None
-		self.observers: List[Callable[[bytes], None]] = []
-
-	def clear_observers(self):
-		self.observers = []
-
-	def add_observer(self, func: Callable[[bytes, Tuple[str, int]], None]):
-		self.observers.append(func)
-
-	def remove_observer(self, func: Callable[[bytes, Tuple[str, int]], None]):
-		self.observers.remove(func)
 
 	def _connect(self):
 		self.recv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.recv_sock.bind((self.address, self.port))
+		self.recv_sock.bind((self.network_adapter, self.port))
 		self.recv_sock.listen()
 
-	def process_observers(self, data, server):
-		"""process observer functions"""
-		for observer in self.observers:
-			try:
-				observer(data, server)
-			except Exception as e:
-				log.error(f'Removing Observer ({observer.__name__}): ({type(e).__name__}) {e}')
-				log.error(traceback.format_exc())
-				self.remove_observer(observer)
-				continue
-
 	def start(self) -> 'TcpListener':
-		"""start tcp listener"""
-
 		self._connect()
 
 		def _publisher():
@@ -214,7 +178,7 @@ class TcpListener:
 						data = b''.join(data)
 
 						if data:
-							self.process_observers(data, server)
+							self.process_observers((data, server))
 
 		self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
 		self.processing_thread.start()
@@ -222,15 +186,12 @@ class TcpListener:
 		return self
 
 	def send(self, data: bytes, server: Tuple[str, int]):
-		"""send bytes using tcp"""
 		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 			sock.settimeout(5)
 			sock.connect(server)
 			sock.sendall(data)
 
 	def stop(self):
-		"""stop publishing thread and close socket"""
-
 		self.select_event.set()
 
 		if self.processing_thread:
@@ -238,6 +199,65 @@ class TcpListener:
 
 		self.select_event.close()
 		self.recv_sock.close()
+
+	def __enter__(self):
+		self.start()
+		return self
+
+	def __exit__(self, exc_type, exec_value, traceback):
+		self.stop()
+		if exc_type is KeyboardInterrupt:
+			return True
+
+
+class UdpListener(Publisher[Tuple[bytes, Tuple[str, int]]]):
+	"""udp socket to publisher pattern"""
+
+	def __init__(self, port: int, network_adapter: str = '0.0.0.0'):
+		super().__init__()
+		self.port = port
+		self.network_adapter = network_adapter
+
+		self.sock: socket.socket = None
+		self.select_event = SelectEvent()
+
+		self.processing_thread: Union[Thread, None] = None
+
+	def _connect(self):
+		"""join multicast group address:port:adapter and bind socket"""
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**8)
+		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		self.sock.bind((self.network_adapter, self.port))
+
+	def stop(self):
+		self.select_event.set()
+
+		if self.processing_thread:
+			self.processing_thread.join(5)
+
+		self.select_event.close()
+		self.sock.close()
+
+	def send(self, data: bytes, server: Optional[Tuple[str, int]]):
+		self.sock.sendto(data, server)
+
+	def start(self) -> 'MulticastPublisher':
+		self._connect()
+
+		def _publisher():
+			with self.sock:
+				while True:
+					if self.select_event.wait(self.sock):
+						break
+
+					data, server = self.sock.recvfrom(UDP_MAX_LEN)
+					self.process_observers((data, server))
+
+		self.processing_thread = Thread(target=_publisher, args=(), daemon=True)
+		self.processing_thread.start()
+
+		return self
 
 	def __enter__(self):
 		self.start()

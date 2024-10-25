@@ -20,7 +20,9 @@ class Converter:
 	def remove_observer(self, func: Callable[[Event, Tuple[str, int]], None]):
 		self.observers.remove(func)
 
-	def process_observers(self, data: bytes, server: Tuple[str, int]):
+	def process_observers(self, packet: Tuple[bytes, Tuple[str, int]]):
+		data, server = packet
+
 		for observer in self.observers:
 			if is_xml(data):
 				event = Event.from_xml(data)

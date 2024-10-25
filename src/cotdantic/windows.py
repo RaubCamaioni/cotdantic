@@ -108,7 +108,9 @@ class PadHandler:
 		curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_GREEN)
 		curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_RED)
 
+		self.running = True
 		self.stdscr = stdscr
+		self.stdscr.nodelay(True)
 		self.stdscr.clear()
 		self.h, self.w = self.stdscr.getmaxyx()
 
@@ -159,8 +161,17 @@ class PadHandler:
 		self.botl.selected = bool(1 == self.selected)
 		self.botr.selected = bool(2 == self.selected)
 
-	def update(self, key: int):
-		if key == curses.KEY_RESIZE:
+	def update(self):
+		key = self.stdscr.getch()
+
+		if key == ord('q'):
+			self.running = False
+			return
+		elif key == curses.KEY_RIGHT:
+			self.next_select()
+		elif key == curses.KEY_LEFT:
+			self.next_select(next=-1)
+		elif key == curses.KEY_RESIZE:
 			self.handle_resize()
 
 		self.topa.update(key)

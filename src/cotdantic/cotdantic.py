@@ -1,4 +1,4 @@
-from .multicast import MulticastListener, TcpListener
+from .multicast import MulticastPublisher, TcpListener, UdpListener
 from .converters import is_xml, xml2proto, is_proto
 from .windows import Pad, PadHandler
 from contextlib import ExitStack
@@ -26,12 +26,12 @@ def lock_decorator(func):
 
 @lock_decorator
 def to_pad(
-	data: bytes,
-	server: Tuple[str, int],
+	packet: Tuple[bytes, Tuple[str, int]],
 	pad: Pad,
 	source: str = 'unknown',
 	debug: bool = False,
 ):
+	data, _ = packet
 	xml_original = None
 	xml_reconstructed = None
 	proto_original = None
@@ -77,7 +77,10 @@ def to_pad(
 		pad.print(f'unknown tags: {model.detail.raw_xml}')
 
 
-def chat_ack(data: bytes, server: Tuple[str, int], socket: TcpListener, pad: Pad, ack: bool = True):
+def chat_ack(
+	packet: Tuple[bytes, Tuple[str, int]], socket: TcpListener, pad: Pad, ack: bool = True
+):
+	data, server = packet
 	event = Event.from_bytes(data)
 
 	if 'GeoChat' in event.uid:
@@ -112,15 +115,13 @@ def cotdantic(stdscr, args):
 
 	converter = Converter()
 	contacts = Contacts()
-	event = pli_cot(address, tport, unicast=unicast)
-
 	phandler = PadHandler(stdscr)
 
 	with ExitStack() as stack:
-		multicast = stack.enter_context(MulticastListener(maddress, mport, minterface))
-		group_chat = stack.enter_context(MulticastListener(gaddress, gport, ginterface))
-		unicast_udp = stack.enter_context(MulticastListener(address, uport, interface))
-		unicast_tcp = stack.enter_context(TcpListener(address, tport))
+		multicast = stack.enter_context(MulticastPublisher(maddress, mport, minterface))
+		group_chat = stack.enter_context(MulticastPublisher(gaddress, gport, ginterface))
+		unicast_udp = stack.enter_context(UdpListener(uport, interface))
+		unicast_tcp = stack.enter_context(TcpListener(tport, interface))
 
 		multicast.add_observer(partial(to_pad, pad=phandler.topa, source='SA', debug=debug))
 		group_chat.add_observer(partial(to_pad, pad=phandler.topa, source='CHAT', debug=debug))
@@ -131,55 +132,43 @@ def cotdantic(stdscr, args):
 		unicast_udp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr, ack=echo))
 		unicast_tcp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr, ack=echo))
 
-		multicast.add_observer(converter.process_observers)
-		converter.add_observer(contacts.pli_listener)
-
 		def contact_display_update(contacts: Contacts):
 			phandler.botl._text = []
 			phandler.botl.print(f'{contacts}')
 
+		multicast.add_observer(converter.process_observers)
+		converter.add_observer(contacts.pli_listener)
 		contacts.add_observer(contact_display_update)
 
-		last_send = 0
+		event = pli_cot(address, tport, unicast=unicast)
 
-		stdscr.nodelay(True)
-		while True:
-			key = stdscr.getch()
+		@throttle(10 if address else -1)
+		def pli_send():
+			event.time = isotime()
+			event.start = isotime()
+			event.stale = isotime(minutes=5)
+			multicast.send(event.to_bytes())
 
-			if key == ord('q'):
-				break
-			elif key == curses.KEY_RIGHT:
-				phandler.next_select()
-			elif key == curses.KEY_LEFT:
-				phandler.next_select(next=-1)
-
-			phandler.update(key)
-
-			if time.time() - last_send > 10:
-				last_send = time.time()
-				event.time = isotime()
-				event.start = isotime()
-				event.stale = isotime(minutes=5)
-				multicast.send(event.to_bytes())
-
+		while phandler.running:
+			pli_send()
+			phandler.update()
 			phandler.refresh()
-			time.sleep(0.01)
+			time.sleep(0.02)
 
 
 def main():
 	from contextlib import suppress
 	import argparse
 
-	ip = default_ip()
 	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--maddress', type=str, default='239.2.3.1', help='SA address')
 	parser.add_argument('--mport', type=int, default=6969, help='SA port')
-	parser.add_argument('--minterface', type=str, default=ip, help='SA interface')
+	parser.add_argument('--minterface', type=str, default='0.0.0.0', help='SA interface')
 	parser.add_argument('--gaddress', type=str, default='224.10.10.1', help='Chat address')
 	parser.add_argument('--gport', type=int, default=17012, help='Chat port')
-	parser.add_argument('--ginterface', type=str, default=ip, help='Chat interface')
-	parser.add_argument('--address', type=str, default=ip, help='default TCP/UDP send address')
-	parser.add_argument('--interface', type=str, default=ip, help='TCP/UDP bind interface')
+	parser.add_argument('--ginterface', type=str, default='0.0.0.0', help='Chat interface')
+	parser.add_argument('--address', type=str, default=None, help='default TCP/UDP send address')
+	parser.add_argument('--interface', type=str, default='0.0.0.0', help='TCP/UDP bind interface')
 	parser.add_argument('--uport', type=int, default=17012, help='UDP port')
 	parser.add_argument('--tport', type=int, default=4242, help='TCP port')
 	parser.add_argument('--debug', type=bool, default=False, help='Print debug information')

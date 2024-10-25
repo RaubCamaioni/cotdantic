@@ -1,24 +1,27 @@
 from .cot_types import atom
 from . import LOCATION
-from typing import Tuple
+from typing import Tuple, Callable
 from .models import *
 import uuid
-import netifaces
+import time
 
 
-def default_interface() -> str:
-	gateways = netifaces.gateways()
-	default_gateway = gateways['default'][netifaces.AF_INET][1]
-	return default_gateway
+def throttle(rate: float):
+	last_call = 0
 
+	def decorator(func: Callable):
+		def wrapper(*args, **kwargs):
+			nonlocal last_call
+			now = time.time()
+			if now - last_call > rate and rate != -1:
+				last_call = now
+				return func(*args, **kwargs)
+			else:
+				return None
 
-def default_ip():
-	try:
-		interface_name = default_interface()
-		addresses = netifaces.ifaddresses(interface_name)
-		return addresses[netifaces.AF_INET][0]['addr']
-	except (ValueError, KeyError):
-		return '0.0.0.0'
+		return wrapper
+
+	return decorator
 
 
 def pli_cot(address: str, port: int, unicast: str) -> Event:
