@@ -34,7 +34,7 @@ def default_cot():
 		group=group,
 		status=status,
 		precision_location=precision_location,
-		link=link,
+		link=[link],
 		alias=alias,
 		track=track,
 	)
@@ -122,7 +122,7 @@ def test_custom_detail():
 		group=event_src.detail.group,
 		status=event_src.detail.status,
 		precision_location=event_src.detail.precision_location,
-		link=event_src.detail.link,
+		link=[event_src.detail.link],
 		alias=event_src.detail.alias,
 		track=event_src.detail.track,
 		description=description,

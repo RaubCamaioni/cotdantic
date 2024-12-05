@@ -82,7 +82,7 @@ cot_model = Event(
 ```
 COT Model  
 ```python
-type='a-f-G-U-C-I' point=Point(lat=38.711, lon=-77.147, hae=10.0, le=10.0, ce=5.0) version=2.0 uid='c56af374-52f6-4c8a-bd1d-8f48e7ebb21b' how='m-g' time='2024-10-12T20:42:31.12Z' start='2024-10-12T20:42:31.12Z' stale='2024-10-12T20:47:31.12Z' qos=None opex=None access=None detail=Detail(contact=Contact(callsign='Delta1', endpoint='192.168.0.100:4242:tcp', phone=None), takv=None, group=Group(name='Cyan', role='Team Member'), status=None, track=None, precision_location=None, link=None, alias=None, image=None, video=None)
+type='a-f-G-U-C-I' point=Point(lat=38.711, lon=-77.147, hae=10.0, le=10.0, ce=5.0) version=2.0 uid='c56af374-52f6-4c8a-bd1d-8f48e7ebb21b' how='m-g' time='2024-10-12T20:42:31.12Z' start='2024-10-12T20:42:31.12Z' stale='2024-10-12T20:47:31.12Z' qos=None opex=None access=None detail=Detail(contact=Contact(callsign='Delta1', endpoint='192.168.0.100:4242:tcp', phone=None), takv=None, group=Group(name='Cyan', role='Team Member'), status=None, track=None, precision_location=None, link=[], alias=None, image=None, video=None)
 ```
 
 ## COT Conversion

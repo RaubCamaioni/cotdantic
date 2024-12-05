@@ -65,8 +65,61 @@ class Contact(CotBase, tag='contact'):
 	phone: Optional[str] = attr(default=None)
 	callsign: Optional[str] = attr(default=None)
 
+class Usericon(CotBase, tag='usericon'):
+	iconsetpath: Optional[str] = attr(default=None)
+
+class Height(CotBase, tag='height'):
+	value: Optional[float] = attr(default=None)
+	height: Optional[float] = None
+
+class Clamped(CotBase, tag="clamped"):
+	value: Optional[bool] = attr(default=None)
+
+class StrokeColor(CotBase, tag="strokeColor"):
+	value: Optional[int] = attr(default=None)
+
+class StrokeStyle(CotBase, tag="strokeStyle"):
+	value: Optional[str] = attr(default=None)
+
+class StrokeWeight(CotBase, tag="strokeWeight"):
+	value: Optional[int] = attr(default=None)
+
+class FillColor(CotBase, tag="fillColor"):
+	value: Optional[int] = attr(default=None)
+
+class HeightUnit(CotBase, tag='height_unit'):
+	value: Optional[int] = attr(default=None)
+	unit: Optional[int] = None
+
+class Alpha(CotBase, tag='alpha'):
+	value: Optional[int] = None
+
+class Width(CotBase, tag="width"):
+	width: Optional[int] = None
+
+class Color(CotBase, tag="color"):
+	color: Optional[str] = None
+
+class LineStyle(CotBase, tag="LineStyle"):
+	color: Optional[Color] = element(default=None)
+	width: Optional[Width] = element(default=None)
+	alpha: Optional[Alpha] = element(default=None)
+
+class PolyStyle(CotBase, tag="PolyStyle"):
+	color: Optional[Color] = element(default=None)
+
+class Style(CotBase, tag="Style"):
+	line_style: Optional[LineStyle] = element(default=None)
+	poly_style: Optional[PolyStyle] = element(default=None)
+
+class Ellipse(CotBase, tag="ellipse"):
+	minor: Optional[float] = attr(default=None)
+	angle: Optional[float] = attr(default=None)
+	major: Optional[float] = attr(deafult=None)
+
 
 class Link(CotBase, tag='link'):
+	style: Optional[Style] = element(default=None)
 	type: Optional[str] = attr(default=None)
 	uid: Optional[str] = attr(default=None)
 	parent_callsign: Optional[str] = attr(default=None)
@@ -76,6 +129,9 @@ class Link(CotBase, tag='link'):
 	point: Optional[str] = attr(default=None)
 	callsign: Optional[str] = attr(default=None)
 
+class Shape(CotBase, tag='shape'):
+	ellipse: Optional[Ellipse] = element(default=None)
+	link: List[Link] = element(default=[])
 
 class Status(CotBase, tag='status'):
 	readiness: Optional[bool] = attr(default=None)
@@ -130,12 +186,7 @@ class Archive(CotBase, tag='archive'):
 	pass
 
 
-class Usericon(CotBase, tag='usericon'):
-	iconsetpath: Optional[str] = attr(default=None)
 
-
-class HeightUnit(CotBase, tag='height_unit'):
-	unit: int
 
 
 class ConnectionEntry(CotBase, tag='ConnectionEntry'):
@@ -201,6 +252,7 @@ class VMF(CotBase, tag='vmf'):
 
 
 class Color(CotBase, tag='color'):
+	value: Optional[int] = attr(default=None)
 	argb: Optional[int] = attr(default=None)
 
 
@@ -239,6 +291,13 @@ class Detail(CotBase, tag='detail'):
 	remarks: Optional[Remarks] = element(default=None)
 	color: Optional[Color] = element(default=None)
 	uid: Optional[UniqueID] = element(default=None)
+	height: Optional[Height] = element(default=None)
+	clamped: Optional[Clamped] = element(default=None)
+	stroke_color: Optional[StrokeColor] = element(default=None)
+	stroke_style: Optional[StrokeStyle] = element(default=None)
+	stroke_weight: Optional[StrokeWeight] = element(default=None)
+	fill_color: Optional[FillColor] = element(default=None)
+	shape: Optional[Shape] = element(default=None)
 
 	@classmethod
 	@lru_cache
