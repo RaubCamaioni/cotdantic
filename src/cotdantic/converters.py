@@ -237,7 +237,11 @@ def model2message(model: EventBase) -> TakMessage:
 				else:
 					encode_status = False
 
-			xml_string += instance.to_xml()
+			if isinstance(instance, list):
+				for item in instance:
+					xml_string += item.to_xml()
+			else:
+				xml_string += instance.to_xml()
 
 		xml_string += detail.raw_xml
 		tak_detail.xmlDetail = xml_string.decode()

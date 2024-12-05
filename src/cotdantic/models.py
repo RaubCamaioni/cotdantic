@@ -71,7 +71,10 @@ class Link(CotBase, tag='link'):
 	uid: Optional[str] = attr(default=None)
 	parent_callsign: Optional[str] = attr(default=None)
 	relation: Optional[str] = attr(default=None)
+	remarks: Optional[str] = attr(default=None)
 	production_time: Optional[str] = attr(default=None)
+	point: Optional[str] = attr(default=None)
+	callsign: Optional[str] = attr(default=None)
 
 
 class Status(CotBase, tag='status'):
@@ -204,12 +207,17 @@ class Color(CotBase, tag='color'):
 class UniqueID(CotBase, tag='uid'):
 	droid: Optional[str] = attr(default=None, name='Droid')
 
+class Navcues(CotBase, tag="__navcues"):
+	pass
+
+class RouteInfo(CotBase, tag="__routeinfo"):
+	navcues: Optional[Navcues] = element(default=None)
 
 class Detail(CotBase, tag='detail'):
 	raw_xml: bytes = Field(exclude=False, default=b'')
 	contact: Optional[Contact] = element(default=None)
 	chat: Optional[Chat] = element(default=None)
-	link: Optional[Link] = element(default=None)
+	link: List[Link] = element(default=[])
 	takv: Optional[Takv] = element(default=None)
 	group: Optional[Group] = element(default=None)
 	status: Optional[Status] = element(default=None)

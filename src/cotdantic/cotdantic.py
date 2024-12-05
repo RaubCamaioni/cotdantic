@@ -31,50 +31,55 @@ def to_pad(
 	source: str = 'unknown',
 	debug: bool = False,
 ):
-	data, _ = packet
-	xml_original = None
-	xml_reconstructed = None
-	proto_original = None
-	proto_reconstructed = None
+	
+	try:
+		data, _ = packet
+		xml_original = None
+		xml_reconstructed = None
+		proto_original = None
+		proto_reconstructed = None
 
-	data_type_string = 'unknown'
-	if is_xml(data):
-		data_type_string = 'xml'
-		xml_original = data
-		model = Event.from_xml(data)
-		proto_reconstructed = model.to_bytes()
-		xml_reconstructed = model.to_xml()
-	elif is_proto(data):
-		data_type_string = 'protobuf'
-		proto_original = data
-		model = Event.from_bytes(proto_original)
-		proto_reconstructed = model.to_bytes()
-		xml_reconstructed = model.to_xml()
-	else:
-		return
+		data_type_string = 'unknown'
+		if is_xml(data):
+			data_type_string = 'xml'
+			xml_original = data
+			model = Event.from_xml(data)
+			proto_reconstructed = model.to_bytes()
+			xml_reconstructed = model.to_xml()
+		elif is_proto(data):
+			data_type_string = 'protobuf'
+			proto_original = data
+			model = Event.from_bytes(proto_original)
+			proto_reconstructed = model.to_bytes()
+			xml_reconstructed = model.to_xml()
+		else:
+			return
 
-	pad.print(f'\n{source}: {data_type_string}', 1)
+		pad.print(f'\n{source}: {data_type_string}', 1)
 
-	if debug and proto_original is not None and proto_original != proto_reconstructed:
-		pad.print(f'proto_original ({len(proto_original)} bytes) != reconstructed proto')
-		pad.print(f'{proto_original}\n')
+		if debug and proto_original is not None and proto_original != proto_reconstructed:
+			pad.print(f'proto_original ({len(proto_original)} bytes) != reconstructed proto')
+			pad.print(f'{proto_original}\n')
 
-	if debug and xml_original is not None and xml_original != xml_reconstructed:
-		pad.print(f'xml_original ({len(xml_original)} bytes) != reconstructed xml')
-		pad.print(f'{xml_original}\n')
+		if debug and xml_original is not None and xml_original != xml_reconstructed:
+			pad.print(f'xml_original ({len(xml_original)} bytes) != reconstructed xml')
+			pad.print(f'{xml_original}\n')
 
-	if debug:
-		pad.print(f'proto reconstructed ({len(proto_reconstructed)} bytes)')
-		pad.print(f'{proto_reconstructed}\n')
+		if debug:
+			pad.print(f'proto reconstructed ({len(proto_reconstructed)} bytes)')
+			pad.print(f'{proto_reconstructed}\n')
 
-	if debug:
-		pad.print(f'xml reconstructed ({len(xml_reconstructed)} bytes)')
-	pad.print(
-		f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n"
-	)
+		if debug:
+			pad.print(f'xml reconstructed ({len(xml_reconstructed)} bytes)')
+		pad.print(
+			f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n"
+		)
 
-	if model.detail.raw_xml:
-		pad.print(f'unknown tags: {model.detail.raw_xml}')
+		if model.detail.raw_xml:
+			pad.print(f'unknown tags: {model.detail.raw_xml}')
+			
+	except Exception as e:
+		pad.print(f'Exception: {e}\n')
 
 
 def chat_ack(
