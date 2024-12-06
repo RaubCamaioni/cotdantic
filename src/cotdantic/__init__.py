@@ -1,21 +1,6 @@
 __version__ = '2.0.0'
 
-from .models import (
-	Point,
-	Contact,
-	Link,
-	Status,
-	Group,
-	Takv,
-	Track,
-	PrecisionLocation,
-	Alias,
-	Image,
-	Detail,
-	EventBase,
-	Event,
-	CotBase,
-)
+from .models import *
 
 from . import converters
 from .cot_types import atom

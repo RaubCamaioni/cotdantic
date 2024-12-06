@@ -1,4 +1,3 @@
-from takproto.functions import msg2proto
 from cotdantic import converters
 from cotdantic import *
 import lxml.etree as ET
@@ -16,6 +15,7 @@ def default_cot():
 		endpoint='192.168.0.100:4242:tcp',
 		phone='+12223334444',
 	)
+	usericon = Usericon(iconsetpath='COT_MAPPING_2525C/a-u/a-u-G')
 	takv = Takv(
 		device='virtual',
 		platform='virtual',
@@ -37,6 +37,7 @@ def default_cot():
 		link=[link],
 		alias=alias,
 		track=track,
+		usericon=usericon,
 	)
 
 	event = Event(

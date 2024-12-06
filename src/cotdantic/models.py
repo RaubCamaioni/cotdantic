@@ -65,54 +65,69 @@ class Contact(CotBase, tag='contact'):
 	phone: Optional[str] = attr(default=None)
 	callsign: Optional[str] = attr(default=None)
 
+
 class Usericon(CotBase, tag='usericon'):
 	iconsetpath: Optional[str] = attr(default=None)
+
 
 class Height(CotBase, tag='height'):
 	value: Optional[float] = attr(default=None)
 	height: Optional[float] = None
 
-class Clamped(CotBase, tag="clamped"):
+
+class Clamped(CotBase, tag='clamped'):
 	value: Optional[bool] = attr(default=None)
 
-class StrokeColor(CotBase, tag="strokeColor"):
+
+class StrokeColor(CotBase, tag='strokeColor'):
 	value: Optional[int] = attr(default=None)
 
-class StrokeStyle(CotBase, tag="strokeStyle"):
+
+class StrokeStyle(CotBase, tag='strokeStyle'):
 	value: Optional[str] = attr(default=None)
 
-class StrokeWeight(CotBase, tag="strokeWeight"):
+
+class StrokeWeight(CotBase, tag='strokeWeight'):
 	value: Optional[int] = attr(default=None)
 
-class FillColor(CotBase, tag="fillColor"):
+
+class FillColor(CotBase, tag='fillColor'):
 	value: Optional[int] = attr(default=None)
+
 
 class HeightUnit(CotBase, tag='height_unit'):
 	value: Optional[int] = attr(default=None)
 	unit: Optional[int] = None
 
+
 class Alpha(CotBase, tag='alpha'):
 	value: Optional[int] = None
 
-class Width(CotBase, tag="width"):
+
+class Width(CotBase, tag='width'):
 	width: Optional[int] = None
 
-class Color(CotBase, tag="color"):
+
+class Color(CotBase, tag='color'):
 	color: Optional[str] = None
 
-class LineStyle(CotBase, tag="LineStyle"):
+
+class LineStyle(CotBase, tag='LineStyle'):
 	color: Optional[Color] = element(default=None)
 	width: Optional[Width] = element(default=None)
 	alpha: Optional[Alpha] = element(default=None)
 
-class PolyStyle(CotBase, tag="PolyStyle"):
+
+class PolyStyle(CotBase, tag='PolyStyle'):
 	color: Optional[Color] = element(default=None)
 
-class Style(CotBase, tag="Style"):
+
+class Style(CotBase, tag='Style'):
 	line_style: Optional[LineStyle] = element(default=None)
 	poly_style: Optional[PolyStyle] = element(default=None)
 
-class Ellipse(CotBase, tag="ellipse"):
+
+class Ellipse(CotBase, tag='ellipse'):
 	minor: Optional[float] = attr(default=None)
 	angle: Optional[float] = attr(default=None)
 	major: Optional[float] = attr(deafult=None)
@@ -129,9 +144,11 @@ class Link(CotBase, tag='link'):
 	point: Optional[str] = attr(default=None)
 	callsign: Optional[str] = attr(default=None)
 
+
 class Shape(CotBase, tag='shape'):
 	ellipse: Optional[Ellipse] = element(default=None)
 	link: List[Link] = element(default=[])
+
 
 class Status(CotBase, tag='status'):
 	readiness: Optional[bool] = attr(default=None)
@@ -184,9 +201,6 @@ class SendData(CotBase, tag='sendData'):
 
 class Archive(CotBase, tag='archive'):
 	pass
-
-
-
 
 
 class ConnectionEntry(CotBase, tag='ConnectionEntry'):
@@ -259,11 +273,31 @@ class Color(CotBase, tag='color'):
 class UniqueID(CotBase, tag='uid'):
 	droid: Optional[str] = attr(default=None, name='Droid')
 
-class Navcues(CotBase, tag="__navcues"):
+
+class Navcues(CotBase, tag='__navcues'):
 	pass
 
-class RouteInfo(CotBase, tag="__routeinfo"):
+
+class RouteInfo(CotBase, tag='__routeinfo'):
 	navcues: Optional[Navcues] = element(default=None)
+
+
+class AckRequest(CotBase, tag='ackrequest'):
+	uid: Optional[str] = attr(default=None)
+	tag: Optional[str] = attr(default=None)
+	ackrequested: Optional[bool] = attr(default=None)
+
+
+class FileShare(CotBase, tag='fileshare'):
+	filename: Optional[str] = attr(default=None)
+	sender_url: Optional[str] = attr(name='senderUrl', default=None)
+	size_in_bytes: Optional[int] = attr(name='sizeInBytes', default=None)
+	sha256: Optional[str] = attr(default=None)
+	sender_uid: Optional[str] = attr(name='senderUid', default=None)
+	sender_callsign: Optional[str] = attr(name='senderCallsign', default=None)
+	name: Optional[str] = attr(default=None)
+	peer_hosted: Optional[bool] = attr(name='peerHosted', default=None)
+
 
 class Detail(CotBase, tag='detail'):
 	raw_xml: bytes = Field(exclude=False, default=b'')
@@ -298,6 +332,8 @@ class Detail(CotBase, tag='detail'):
 	stroke_weight: Optional[StrokeWeight] = element(default=None)
 	fill_color: Optional[FillColor] = element(default=None)
 	shape: Optional[Shape] = element(default=None)
+	file_share: Optional[FileShare] = element(default=None)
+	ack_request: Optional[AckRequest] = element(default=None)
 
 	@classmethod
 	@lru_cache

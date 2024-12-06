@@ -1,5 +1,7 @@
 {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "python.languageServer": "ruff",
-    "ruff.lineLength": 120
+    "ruff.lineLength": 120,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true
 }

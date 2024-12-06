@@ -239,7 +239,7 @@ class UdpListener(Publisher[Tuple[bytes, Tuple[str, int]]]):
 		self.select_event.close()
 		self.sock.close()
 
-	def send(self, data: bytes, server: Optional[Tuple[str, int]]):
+	def send(self, data: bytes, server: Tuple[str, int]):
 		self.sock.sendto(data, server)
 
 	def start(self) -> 'MulticastPublisher':
