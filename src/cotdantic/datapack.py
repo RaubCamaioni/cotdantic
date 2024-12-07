@@ -8,6 +8,7 @@ import threading
 import os
 from dataclasses import dataclass, field
 import zipfile
+import socket
 import uuid
 
 
@@ -16,7 +17,9 @@ class FileServer(threading.Thread):
 		super().__init__()
 		self.port = port
 		self.directory = directory
+		self.daemon = True
 		self.httpd = None
+		socketserver.TCPServer.allow_reuse_address = True
 
 	def run(self):
 		Handler = http.server.SimpleHTTPRequestHandler

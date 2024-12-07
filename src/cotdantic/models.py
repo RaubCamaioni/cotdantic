@@ -282,10 +282,10 @@ class RouteInfo(CotBase, tag='__routeinfo'):
 	navcues: Optional[Navcues] = element(default=None)
 
 
-class AckRequest(CotBase, tag='ackrequest'):
+class AckRequest(CotBase, tag='ack_request'):
 	uid: Optional[str] = attr(default=None)
 	tag: Optional[str] = attr(default=None)
-	ackrequested: Optional[bool] = attr(default=None)
+	ack_requested: Optional[bool] = attr(default=None)
 
 
 class FileShare(CotBase, tag='fileshare'):

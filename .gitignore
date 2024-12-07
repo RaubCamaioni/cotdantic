@@ -8,3 +8,4 @@ local/
 .pytest_cache/
 .ruff_cache
 .nox
+local/
