@@ -9,7 +9,7 @@ takproto.functions.ET = ET
 
 
 def default_cot():
-	point = Point(lat=LOCATION[0], lon=LOCATION[1], hae=10, ce=5.0, le=10.0)
+	point = Point(lat=0, lon=0, hae=10, ce=5.0, le=10.0)
 	contact = Contact(
 		callsign='Delta1',
 		endpoint='192.168.0.100:4242:tcp',

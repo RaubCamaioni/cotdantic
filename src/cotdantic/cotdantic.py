@@ -1,13 +1,14 @@
 from .multicast import MulticastPublisher, TcpListener, UdpListener
-from .converters import is_xml, xml2proto, is_proto
+from .converters import is_xml, is_proto
 from .windows import Pad, PadHandler
 from contextlib import ExitStack
-from .cot_types import atom
 from threading import Lock
 from typing import Tuple
+from .templates import *
 from .utilities import *
 from .contacts import *
 from .models import *
+from . import UID, CALLSIGN
 import logging
 import curses
 import time
@@ -31,7 +32,6 @@ def to_pad(
 	source: str = 'unknown',
 	debug: bool = False,
 ):
-	
 	try:
 		data, _ = packet
 		xml_original = None
@@ -71,33 +71,33 @@ def to_pad(
 
 		if debug:
 			pad.print(f'xml reconstructed ({len(xml_reconstructed)} bytes)')
-		pad.print(
-			f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n"
-		)
+		pad.print(f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n")
 
 		if model.detail.raw_xml:
 			pad.print(f'unknown tags: {model.detail.raw_xml}')
-			
+
 	except Exception as e:
 		pad.print(f'Exception: {e}\n')
 
 
-def chat_ack(
-	packet: Tuple[bytes, Tuple[str, int]], socket: TcpListener, pad: Pad, ack: bool = True
-):
+def chat_ack(packet: Tuple[bytes, Tuple[str, int]], socket: TcpListener, pad: Pad, ack: bool = True):
 	data, server = packet
 	event = Event.from_bytes(data)
 
-	if 'GeoChat' in event.uid:
-		pad.print(f'{event.detail.chat.sender_callsign}: {event.detail.remarks.text}')
+	try:
+		if 'GeoChat' in event.uid:
+			pad.print(f'{event.detail.chat.sender_callsign}: {event.detail.remarks.text}')
 
-		if not ack:
-			return
+			if not ack:
+				return
 
-		event1, event2 = ack_message(event)
-		socket.send(event1.to_bytes(), (server[0], 4242))
-		socket.send(event2.to_bytes(), (server[0], 4242))
-		socket.send(echo_chat(event).to_bytes(), (server[0], 4242))
+			event1, event2 = ack_message(event)
+			socket.send(bytes(event1), (server[0], 4242))
+			socket.send(bytes(event2), (server[0], 4242))
+			socket.send(bytes(echo_chat(event)), (server[0], 4242))
+
+	except Exception as e:
+		pad.print(f'\n\n{type(e)}')
 
 
 def cotdantic(stdscr, args):
@@ -134,7 +134,7 @@ def cotdantic(stdscr, args):
 		unicast_tcp.add_observer(partial(to_pad, pad=phandler.topa, source='TCP', debug=debug))
 
 		group_chat.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr, ack=False))
-		unicast_udp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr, ack=echo))
+		unicast_udp.add_observer(partial(chat_ack, socket=unicast_udp, pad=phandler.botr, ack=echo))
 		unicast_tcp.add_observer(partial(chat_ack, socket=unicast_tcp, pad=phandler.botr, ack=echo))
 
 		def contact_display_update(contacts: Contacts):
@@ -145,7 +145,16 @@ def cotdantic(stdscr, args):
 		converter.add_observer(contacts.pli_listener)
 		contacts.add_observer(contact_display_update)
 
-		event = pli_cot(address, tport, unicast=unicast)
+		event = default_blue_force(
+			uid=UID,
+			callsign=CALLSIGN,
+			group_name='Cyan',
+			group_role='Team Member',
+			address=address,
+			lat=38.691420,
+			lon=-77.134600,
+			unicast=unicast,
+		)
 
 		@throttle(10 if address else -1)
 		def pli_send():
@@ -176,10 +185,8 @@ def main():
 	parser.add_argument('--interface', type=str, default='0.0.0.0', help='TCP/UDP bind interface')
 	parser.add_argument('--uport', type=int, default=17012, help='UDP port')
 	parser.add_argument('--tport', type=int, default=4242, help='TCP port')
-	parser.add_argument('--debug', type=bool, default=False, help='Print debug information')
-	parser.add_argument(
-		'--unicast', default='tcp', choices=['tcp', 'udp'], help='Endpoint protocol'
-	)
+	parser.add_argument('--unicast', default='tcp', choices=['tcp', 'udp'], help='Endpoint protocol')
+	parser.add_argument('--debug', action='store_true', help='Print debug information')
 	parser.add_argument('--echo', action='store_true', help='Echo back direct messages')
 	args = parser.parse_args()
 

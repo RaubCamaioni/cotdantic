@@ -1,15 +1,23 @@
-from typing import Optional, List
+from dataclasses import dataclass, field
 from pydantic_xml import element, attr
-from cotdantic.models import CotBase, Event
+from typing import Optional, List
+from cotdantic.models import *
 from pathlib import Path
 import http.server
 import socketserver
 import threading
-import os
-from dataclasses import dataclass, field
 import zipfile
-import socket
+import hashlib
 import uuid
+import os
+
+
+def sha256_file(path: Path):
+	hasher = hashlib.sha256()
+	with open(path, 'rb') as f:
+		for byte_block in iter(lambda: f.read(4096), b''):
+			hasher.update(byte_block)
+		return hasher.hexdigest()
 
 
 class FileServer(threading.Thread):
@@ -19,15 +27,30 @@ class FileServer(threading.Thread):
 		self.directory = directory
 		self.daemon = True
 		self.httpd = None
+		self.download_event = threading.Event()
 		socketserver.TCPServer.allow_reuse_address = True
 
 	def run(self):
-		Handler = http.server.SimpleHTTPRequestHandler
+		Handler = self.get_handler()
 		os.chdir(self.directory)
 
 		with socketserver.TCPServer(('0.0.0.0', self.port), Handler) as httpd:
 			self.httpd = httpd
 			httpd.serve_forever()
+
+	def get_handler(self):
+		download_event = self.download_event
+
+		class CustomHandler(http.server.SimpleHTTPRequestHandler):
+			def do_GET(self):
+				super().do_GET()
+				download_event.set()
+
+		return CustomHandler
+
+	def serve_until_download(self):
+		self.download_event.wait()
+		self.stop()
 
 	def stop(self):
 		if self.httpd:
@@ -121,3 +144,39 @@ class DataPack:
 	def unzip(cls, file: str):
 		"""TODO: function is not implimented"""
 		pass
+
+
+def create_file_share(
+	path: Path,
+	url: str,
+	sender_uid: str,
+	sender_callsign: str,
+):
+	file_share = FileShare(
+		filename=str(path.name),
+		sender_url=url,
+		size_in_bytes=path.lstat().st_size,
+		sha256=sha256_file(path),
+		sender_callsign=sender_callsign,
+		sender_uid=sender_uid,
+		name=path.stem,
+		peer_hosted=True,
+	)
+
+	detail = Detail(
+		file_share=file_share,
+		ack_request=AckRequest(
+			uid=str(uuid.uuid4()),
+			tag=path.stem,
+			ack_requested=True,
+		),
+	)
+
+	event = Event(
+		type='b-f-t-r',
+		how='h-e',
+		point=Point(lat=0, lon=0, hae=0),
+		detail=detail,
+	)
+
+	return event

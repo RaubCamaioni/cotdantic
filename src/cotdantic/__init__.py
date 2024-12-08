@@ -4,8 +4,10 @@ from .models import *
 
 from . import converters
 from .cot_types import atom
+import uuid
 
-LOCATION = (38.691420, -77.134600)
+UID = f'cotdantic-{uuid.getnode()}'
+CALLSIGN = 'cotdantic'
 
 
 def __event_to_bytes(self: EventBase) -> bytes:
