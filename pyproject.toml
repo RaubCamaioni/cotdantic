@@ -45,3 +45,11 @@ ignore = [ "F403", "F405", "F401",]
 quote-style = "single"
 indent-style = "tab"
 docstring-code-format = true
+
+[tool.uv]
+dev-dependencies = [
+    "cotdantic[dev]",
+]
+
+[tool.uv.sources]
+cotdantic = { workspace = true }

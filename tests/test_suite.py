@@ -70,9 +70,13 @@ def test_proto_lossless():
 	event_src.detail.contact.phone = None
 	proto = bytes(event_src)
 	event_dst = Event.from_bytes(proto)
-	# don't compair raw_xml
+
+	event_src.tak_control = TakControl()
+	event_dst.tak_control = TakControl()
+
 	event_src.detail.raw_xml = ''
 	event_dst.detail.raw_xml = ''
+
 	assert event_src == event_dst
 
 
@@ -146,3 +150,33 @@ def test_custom_detail():
 
 def test_cot_types():
 	assert str(atom.hostile.ground.civilian) == 'a-h-G-C'
+
+
+if __name__ == '__main__':
+	# TODO: fix time compare and update all tests
+
+	event_src = default_cot()
+	# takproto does not support contact.phone
+	event_src.detail.contact.phone = None
+	proto = bytes(event_src)
+	event_dst = Event.from_bytes(proto)
+
+	event_src.tak_control = TakControl()
+	event_dst.tak_control = TakControl()
+
+	# time accuracy is not preserved
+	t = isotime()
+	event_dst.time = t
+	event_src.time = t
+	event_dst.start = t
+	event_src.start = t
+	event_dst.stale = t
+	event_src.stale = t
+
+	event_src.detail.raw_xml = b'<outer><inner/></outer>'
+	event_dst.detail.raw_xml = b'<outer><inner></inner></outer>'
+
+	print(event_src.to_xml())
+	print(event_dst.to_xml())
+
+	print(event_src == event_dst)

@@ -352,14 +352,22 @@ class Detail(CotBase, tag='detail'):
 		if len(value) == 0:
 			return
 
-		for child in ET.fromstring(f'<_raw>{value.decode()}</_raw>'):
-			child_element = element.make_element(tag=child.tag, nsmap=None)
+		def _recursive_serialize(parent_element: XmlElementWriter, xml_string: str):
+			print(xml_string)
 
-			for key, val in child.attrib.items():
-				child_element.set_attribute(key, val)
+			for child in ET.fromstring(xml_string):
+				child_element = parent_element.make_element(tag=child.tag, nsmap=None)
 
-			child_element.set_text(child.text)
-			element.append_element(child_element)
+				child_element.set_text(child.text)
+				for key, val in child.attrib.items():
+					child_element.set_attribute(key, val)
+
+				parent_element.append_element(child_element)
+
+				if len(child) > 0:
+					_recursive_serialize(child_element, ET.tostring(child).decode())
+
+		_recursive_serialize(element, f'<_raw>{value.decode()}</_raw>')
 
 
 class TakControl(CotBase):

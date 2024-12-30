@@ -58,7 +58,7 @@ wheels = [
 
 [[package]]
 name = "cotdantic"
-version = "1.0.8"
+version = "2.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "lxml" },
@@ -78,6 +78,13 @@ testing = [
     { name = "pytest" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "nox", extra = ["uv"] },
+    { name = "pre-commit" },
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "lxml", specifier = ">=5.3.0" },
@@ -90,6 +97,9 @@ requires-dist = [
     { name = "toml" },
     { name = "windows-curses", marker = "sys_platform == 'win32'" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "cotdantic", extras = ["dev"], editable = "." }]
 
 [[package]]
 name = "distlib"
