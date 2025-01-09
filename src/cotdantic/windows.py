@@ -66,10 +66,12 @@ class Pad:
 			self._up_scroll(1)
 		elif key == curses.KEY_DOWN:
 			self._down_scroll(1)
-		elif key == curses.KEY_ENTER:
+		elif key == curses.KEY_END:
 			self._scroll_end()
 
 	def _scroll_end(self, over_scroll: int = 0):
+		self.print('scrolling to the end')
+
 		length = len(self._text)
 		if length > self.max_y:
 			self.index = length - self.max_y + over_scroll
