@@ -239,6 +239,10 @@ class ChatGroup(CotBase, tag='chatgrp'):
 	uid1: Optional[str] = attr(default=None)
 
 
+class RangeUnits(CotBase, tag='rangeUnits'):
+	value: Optional[int] = attr(default=None)
+
+
 class Chat(CotBase, tag='__chat'):
 	id: Optional[str] = attr(default=None)
 	chatroom: Optional[str] = attr(default=None)
@@ -274,8 +278,40 @@ class UniqueID(CotBase, tag='uid'):
 	droid: Optional[str] = attr(default=None, name='Droid')
 
 
+class Range(CotBase, tag='range'):
+	value: Optional[float] = attr(default=None)
+
+
+class NorthRef(CotBase, tag='northRef'):
+	value: Optional[float] = attr(default=None)
+
+
+class BearingUnits(CotBase, tag='bearingUnits'):
+	value: Optional[float] = attr(default=None)
+
+
+class Bearing(CotBase, tag='bearing'):
+	value: Optional[float] = attr(default=None)
+
+
+class Inclination(CotBase, tag='inclination'):
+	value: Optional[float] = attr(default=None)
+
+
 class Navcues(CotBase, tag='__navcues'):
 	pass
+
+
+class BullsEye(CotBase, tag='bullseye'):
+	title: Optional[str] = attr(default=None)
+	edge_to_center: Optional[bool] = attr(name='edgeToCenter', default=None)
+	mils: Optional[bool] = attr(default=None)
+	has_range_rings: Optional[bool] = attr(name='hasRangeRings', default=None)
+	ring_dist: Optional[float] = attr(name='ringDist', default=None)
+	range_ring_visible: Optional[bool] = attr(name='rangeRingVisible', default=None)
+	distance: Optional[float] = attr(default=None)
+	bullseye_uid: Optional[str] = attr(name='bullseyeUID', default=None)
+	bearing_ref: Optional[str] = attr(name='bearingRef', default=None)
 
 
 class RouteInfo(CotBase, tag='__routeinfo'):
@@ -334,6 +370,13 @@ class Detail(CotBase, tag='detail'):
 	shape: Optional[Shape] = element(default=None)
 	file_share: Optional[FileShare] = element(default=None)
 	ack_request: Optional[AckRequest] = element(default=None)
+	range_units: Optional[RangeUnits] = element(default=None)
+	bulls_eye: Optional[BullsEye] = element(default=None)
+	inclination: Optional[Inclination] = element(default=None)
+	north_ref: Optional[NorthRef] = element(default=None)
+	bearingUnits: Optional[BearingUnits] = element(default=None)
+	bearing: Optional[Bearing] = element(default=None)
+	range: Optional[Range] = element(default=None)
 
 	@classmethod
 	@lru_cache

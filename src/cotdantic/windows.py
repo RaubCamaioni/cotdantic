@@ -61,11 +61,12 @@ class Pad:
 	def update(self, key: int):
 		if not self.selected:
 			return
+
 		if key == curses.KEY_UP:
 			self._up_scroll(1)
 		elif key == curses.KEY_DOWN:
 			self._down_scroll(1)
-		elif key == curses.KEY_BACKSPACE:
+		elif key == curses.KEY_ENTER:
 			self._scroll_end()
 
 	def _scroll_end(self, over_scroll: int = 0):
@@ -82,9 +83,7 @@ class Pad:
 		if len(self._text) < self.max_y:
 			self.index = 0
 		elif len(self._text) > self.max_y - self.over_scroll_max:
-			self.index = min(
-				self.index + lines, len(self._text) - self.max_y + self.over_scroll_max
-			)
+			self.index = min(self.index + lines, len(self._text) - self.max_y + self.over_scroll_max)
 		else:
 			self.index = 0
 
