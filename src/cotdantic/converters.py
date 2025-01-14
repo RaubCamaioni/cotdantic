@@ -35,7 +35,8 @@ PROTO_KNOWN_ELEMENTS = {
 
 def is_xml(data: bytes) -> bool:
 	try:
-		return ET.fromstring(data.decode())
+		ET.fromstring(data.decode())
+		return True
 	except (ET.ParseError, UnicodeDecodeError):
 		return False
 
@@ -43,7 +44,7 @@ def is_xml(data: bytes) -> bool:
 def is_proto(data: bytes) -> bool:
 	try:
 		tak_message = parse_proto(data)
-		return bool(tak_message)
+		return tak_message is not None
 	except TypeError:
 		return False
 

@@ -71,7 +71,7 @@ def to_pad(
 
 		if debug:
 			pad.print(f'xml reconstructed ({len(xml_reconstructed)} bytes)')
-		pad.print(f"{model.to_xml(pretty_print=True, encoding='UTF-8', standalone=True).decode().strip()}\n")
+		pad.print(f'{model.to_xml(pretty_print=True, encoding="UTF-8", standalone=True).decode().strip()}\n')
 
 		if model.detail.raw_xml:
 			pad.print(f'unknown tags: {model.detail.raw_xml}')
@@ -161,7 +161,7 @@ def cotdantic(stdscr, args):
 			event.time = isotime()
 			event.start = isotime()
 			event.stale = isotime(minutes=5)
-			multicast.send(event.to_bytes())
+			multicast.send(event.to_xml())
 
 		while phandler.running:
 			pli_send()

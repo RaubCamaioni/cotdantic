@@ -41,7 +41,10 @@ def epoch2iso(epoch: int):
 
 
 def iso2epoch(iso: str) -> int:
-	time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
+	if '.' in iso:
+		time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
+	else:
+		time = datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc)
 	return int(time.timestamp() * 1000)
 
 
