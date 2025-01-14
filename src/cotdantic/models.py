@@ -396,8 +396,6 @@ class Detail(CotBase, tag='detail'):
 			return
 
 		def _recursive_serialize(parent_element: XmlElementWriter, xml_string: str):
-			print(xml_string)
-
 			for child in ET.fromstring(xml_string):
 				child_element = parent_element.make_element(tag=child.tag, nsmap=None)
 

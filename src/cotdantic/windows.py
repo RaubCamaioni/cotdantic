@@ -70,8 +70,6 @@ class Pad:
 			self._scroll_end()
 
 	def _scroll_end(self, over_scroll: int = 0):
-		self.print('scrolling to the end')
-
 		length = len(self._text)
 		if length > self.max_y:
 			self.index = length - self.max_y + over_scroll
