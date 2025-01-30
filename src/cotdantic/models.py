@@ -445,6 +445,10 @@ class EventBase(CotBase, Generic[T], tag='event'):
 	def from_bytes(cls, proto: bytes) -> 'EventBase[T]':
 		raise NotImplementedError('attached in __init__.py')
 
+	@classmethod
+	def from_cot(cls, data: bytes) -> Union['EventBase[T]', None]:
+		raise NotImplementedError('attached in __init__.py')
+
 
 class Event(EventBase[Detail]):
 	""""""

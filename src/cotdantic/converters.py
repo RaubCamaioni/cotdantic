@@ -50,14 +50,13 @@ def is_proto(data: bytes) -> bool:
 
 
 def parse_cot(data):
-	if is_xml(data):
-		p = xml2proto(data)
-		return True, parse_proto(p)
-
 	if is_proto(data):
-		return True, parse_proto(data)
+		return Event.from_bytes(data)
 
-	return False, None
+	if is_xml(data):
+		return Event.from_xml(data)
+
+	return None
 
 
 def proto2model(cls: EventBase, proto: bytes) -> EventBase:

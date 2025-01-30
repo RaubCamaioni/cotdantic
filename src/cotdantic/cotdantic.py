@@ -33,7 +33,7 @@ def to_pad(
 	debug: bool = False,
 ):
 	try:
-		data, _ = packet
+		data, address = packet
 		xml_original = None
 		xml_reconstructed = None
 		proto_original = None
@@ -55,7 +55,7 @@ def to_pad(
 		else:
 			return
 
-		pad.print(f'\n{source}: {data_type_string}', 1)
+		pad.print(f'\n{source}: {data_type_string} ({address[0]})', 1)
 
 		if debug and proto_original is not None and proto_original != proto_reconstructed:
 			pad.print(f'proto_original ({len(proto_original)} bytes) != reconstructed proto')
