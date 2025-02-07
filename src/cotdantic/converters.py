@@ -1,26 +1,11 @@
-from .models import (
-	PrecisionLocation,
-	TakControl,
-	epoch2iso,
-	EventBase,
-	iso2epoch,
-	Contact,
-	CotBase,
-	Status,
-	Detail,
-	Track,
-	Event,
-	Point,
-	Group,
-	Takv,
-)
-
 import xml.etree.ElementTree as ET
 from typing import get_args
 
 from takproto import parse_proto, xml2proto
 from takproto.functions import msg2proto
 from takproto.proto import TakMessage
+
+from cotdantic import models
 
 PROTO_KNOWN_ELEMENTS = {
 	# 'contact', # check non-standard values
@@ -51,15 +36,15 @@ def is_proto(data: bytes) -> bool:
 
 def parse_cot(data):
 	if is_proto(data):
-		return Event.from_bytes(data)
+		return models.Event.from_bytes(data)
 
 	if is_xml(data):
-		return Event.from_xml(data)
+		return models.Event.from_xml(data)
 
 	return None
 
 
-def proto2model(cls: EventBase, proto: bytes) -> EventBase:
+def proto2model(cls: models.EventBase, proto: bytes) -> models.EventBase:
 	proto_message = parse_proto(proto)
 	proto_event = proto_message.cotEvent
 	proto_detail = proto_event.detail
@@ -69,7 +54,7 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	proto_pl = proto_detail.precisionLocation
 	tak_control = proto_message.takControl
 
-	point = Point(
+	point = models.Point(
 		lat=proto_event.lat,
 		lon=proto_event.lon,
 		hae=proto_event.hae,
@@ -79,27 +64,27 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 
 	contact = None
 	if proto_detail.HasField('contact'):
-		contact = Contact(
+		contact = models.Contact(
 			callsign=proto_contact.callsign or None,
 			endpoint=proto_contact.endpoint or None,
 		)
 
 	status = None
 	if proto_detail.HasField('status'):
-		status = Status(
+		status = models.Status(
 			battery=proto_status.battery or None,
 		)
 
 	group = None
 	if proto_detail.HasField('group'):
-		group = Group(
+		group = models.Group(
 			name=proto_detail.group.name or None,
 			role=proto_detail.group.role or None,
 		)
 
 	takv = None
 	if proto_detail.HasField('takv'):
-		takv = Takv(
+		takv = models.Takv(
 			device=proto_takv.device or None,
 			platform=proto_takv.platform or None,
 			os=proto_takv.os or None,
@@ -108,14 +93,14 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 
 	precision_location = None
 	if proto_detail.HasField('precisionLocation'):
-		precision_location = PrecisionLocation(
+		precision_location = models.PrecisionLocation(
 			geopointsrc=proto_pl.geopointsrc or None,
 			altsrc=proto_pl.altsrc or None,
 		)
 
 	track = None
 	if proto_detail.HasField('track'):
-		track = Track(
+		track = models.Track(
 			speed=proto_detail.track.speed,
 			course=proto_detail.track.course,
 		)
@@ -125,8 +110,7 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	custom_type = types_in_union[0]
 
 	raw_xml = f'<detail>{proto_detail.xmlDetail}</detail>'
-	detail: Detail = custom_type.from_xml(raw_xml)
-
+	detail: models.Detail = custom_type.from_xml(raw_xml)
 	detail.precision_location = detail.precision_location or precision_location
 	detail.contact = detail.contact or contact
 	detail.status = detail.status or status
@@ -139,7 +123,7 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	tags = [ET.tostring(root.find(tag), encoding='utf-8') for tag in tags]
 	detail.raw_xml = b''.join(tags)
 
-	control = TakControl(
+	control = models.TakControl(
 		minProtoVersion=tak_control.minProtoVersion,
 		maxProtoVersion=tak_control.maxProtoVersion,
 		contactUid=tak_control.contactUid,
@@ -153,9 +137,9 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 		opex=proto_event.opex or None,
 		uid=proto_event.uid,
 		how=proto_event.how,
-		time=epoch2iso(proto_event.sendTime),
-		start=epoch2iso(proto_event.startTime),
-		stale=epoch2iso(proto_event.staleTime),
+		time=models.epoch2iso(proto_event.sendTime),
+		start=models.epoch2iso(proto_event.startTime),
+		stale=models.epoch2iso(proto_event.staleTime),
 		point=point,
 		detail=detail,
 	)
@@ -163,17 +147,17 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	return event
 
 
-def model2xml2proto(model: EventBase):
+def model2xml2proto(model: models.EventBase):
 	xml = model.to_xml()
 	return bytes(xml2proto(xml))
 
 
-def model2proto(model: EventBase) -> bytes:
+def model2proto(model: models.EventBase) -> bytes:
 	message = model2message(model)
 	return bytes(msg2proto(message, None))
 
 
-def model2message(model: EventBase) -> TakMessage:
+def model2message(model: models.EventBase) -> TakMessage:
 	tak_message = TakMessage()
 
 	tak_message.takControl.minProtoVersion = model.tak_control.minProtoVersion
@@ -191,16 +175,16 @@ def model2message(model: EventBase) -> TakMessage:
 	tak_event.opex = model.opex or ''
 	tak_event.uid = model.uid
 	tak_event.how = model.how
-	tak_event.sendTime = iso2epoch(model.time)
-	tak_event.startTime = iso2epoch(model.start)
-	tak_event.staleTime = iso2epoch(model.stale)
+	tak_event.sendTime = models.iso2epoch(model.time)
+	tak_event.startTime = models.iso2epoch(model.start)
+	tak_event.staleTime = models.iso2epoch(model.stale)
 	tak_event.lat = model.point.lat
 	tak_event.lon = model.point.lon
 	tak_event.hae = model.point.hae
 	tak_event.ce = model.point.ce
 	tak_event.le = model.point.le
 
-	detail: Detail = model.detail
+	detail: models.Detail = model.detail
 	if detail is None:
 		return tak_message
 
@@ -220,7 +204,7 @@ def model2message(model: EventBase) -> TakMessage:
 			if name in PROTO_KNOWN_ELEMENTS:
 				continue
 
-			instance: CotBase = getattr(detail, name)
+			instance: models.CotBase = getattr(detail, name)
 
 			if instance is None:
 				continue

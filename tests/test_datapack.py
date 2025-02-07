@@ -52,8 +52,8 @@ def send_zip(address_server: str, address_client: str):
 		event = create_file_share(
 			zip_file,
 			f'http://{address_server}:{port}/{zip_file.name}',
-			cotdantic.UID,
-			cotdantic.CALLSIGN,
+			cotdantic.COTDANTIC_IOD,
+			cotdantic.COTDANTIC_CALLSIGN,
 		)
 
 		com.send(bytes(event), (address_client, 4242))

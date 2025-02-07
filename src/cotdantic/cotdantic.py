@@ -8,7 +8,7 @@ from .templates import *
 from .utilities import *
 from .contacts import *
 from .models import *
-from . import UID, CALLSIGN
+from . import COTDANTIC_IOD, COTDANTIC_CALLSIGN
 import logging
 import curses
 import time
@@ -146,8 +146,8 @@ def cotdantic(stdscr, args):
 		contacts.add_observer(contact_display_update)
 
 		event = default_blue_force(
-			uid=UID,
-			callsign=CALLSIGN,
+			uid=COTDANTIC_IOD,
+			callsign=COTDANTIC_CALLSIGN,
 			group_name='Cyan',
 			group_role='Team Member',
 			address=address,

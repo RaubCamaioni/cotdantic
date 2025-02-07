@@ -9,6 +9,8 @@ from uuid import uuid4
 import pydantic_xml
 import datetime
 
+import cotdantic
+
 
 class CotBase(pydantic_xml.BaseXmlModel, search_mode='unordered'):
 	def to_xml(
@@ -436,18 +438,18 @@ class EventBase(CotBase, Generic[T], tag='event'):
 	detail: Optional[T] = element(default=None)
 
 	def __bytes__(self) -> bytes:
-		raise NotImplementedError('attached in __init__.py')
+		return cotdantic.converters.model2proto(self)
 
 	def to_bytes(self) -> bytes:
-		raise NotImplementedError('attached in __init__.py')
+		return cotdantic.converters.model2proto(self)
 
 	@classmethod
 	def from_bytes(cls, proto: bytes) -> 'EventBase[T]':
-		raise NotImplementedError('attached in __init__.py')
+		return cotdantic.converters.proto2model(cls, proto)
 
 	@classmethod
-	def from_cot(cls, data: bytes) -> Union['EventBase[T]', None]:
-		raise NotImplementedError('attached in __init__.py')
+	def from_cot(cls, data: bytes) -> Optional['EventBase[T]']:
+		return cotdantic.converters.parse_cot(data)
 
 
 class Event(EventBase[Detail]):

@@ -1,5 +1,5 @@
 from cotdantic.models import *
-from . import UID, CALLSIGN, atom
+from . import COTDANTIC_IOD, COTDANTIC_CALLSIGN, atom
 from typing import Tuple
 
 
@@ -38,27 +38,27 @@ def default_blue_force(
 def echo_chat(sender: Event):
 	sender_uid = sender.detail.chat.chatgrp.uid0
 	message_id = sender.detail.chat.message_id
-	uid = f'GeoChat.{UID}.{sender_uid}.{message_id}'
+	uid = f'GeoChat.{COTDANTIC_IOD}.{sender_uid}.{message_id}'
 
 	from_type = str(atom.friend.ground.unit.combat.infantry)
 	point = Point(lat=0, lon=0)
-	link = Link(type=from_type, uid=UID, relation='p-p')
+	link = Link(type=from_type, uid=COTDANTIC_IOD, relation='p-p')
 	chatgrp = ChatGroup(
-		id=UID,
-		uid0=UID,
+		id=COTDANTIC_IOD,
+		uid0=COTDANTIC_IOD,
 		uid1=sender_uid,
 	)
 	chat = Chat(
-		id=UID,
+		id=COTDANTIC_IOD,
 		chatroom=sender.detail.chat.sender_callsign,
-		sender_callsign=CALLSIGN,
+		sender_callsign=COTDANTIC_CALLSIGN,
 		group_owner='false',
 		message_id=f'{message_id}',
 		chatgrp=chatgrp,
 	)
 	remarks = Remarks(
-		source=CALLSIGN,
-		source_id=UID,
+		source=COTDANTIC_CALLSIGN,
+		source_id=COTDANTIC_IOD,
 		to=sender_uid,
 		text=sender.detail.remarks.text,
 	)
@@ -76,17 +76,17 @@ def echo_chat(sender: Event):
 def ack_message(chat_event: Event) -> Tuple[Event, Event]:
 	from_type = str(atom.friend.ground.unit.combat.infantry)
 
-	link = Link(type=from_type, uid=UID, relation='p-p')
+	link = Link(type=from_type, uid=COTDANTIC_IOD, relation='p-p')
 
 	chatgrp = ChatGroup(
-		id=UID,
-		uid0=UID,
+		id=COTDANTIC_IOD,
+		uid0=COTDANTIC_IOD,
 		uid1=chat_event.detail.chat.id,
 	)
 	chat = Chat(
-		id=UID,
+		id=COTDANTIC_IOD,
 		chatroom=chat_event.detail.chat.sender_callsign,
-		sender_callsign=CALLSIGN,
+		sender_callsign=COTDANTIC_CALLSIGN,
 		group_owner='false',
 		message_id=chat_event.detail.chat.message_id,
 		chatgrp=chatgrp,
