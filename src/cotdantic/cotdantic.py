@@ -4,6 +4,7 @@ from .windows import Pad, PadHandler
 from contextlib import ExitStack
 from threading import Lock
 from typing import Tuple
+from traceback import format_exc
 from .templates import *
 from .utilities import *
 from .contacts import *
@@ -40,6 +41,7 @@ def to_pad(
 		proto_reconstructed = None
 
 		data_type_string = 'unknown'
+
 		if is_xml(data):
 			data_type_string = 'xml'
 			xml_original = data
@@ -53,6 +55,7 @@ def to_pad(
 			proto_reconstructed = model.to_bytes()
 			xml_reconstructed = model.to_xml()
 		else:
+			pad.print(is_proto(data))
 			return
 
 		pad.print(f'\n{source}: {data_type_string} ({address[0]})', 1)
@@ -78,6 +81,7 @@ def to_pad(
 
 	except Exception as e:
 		pad.print(f'Exception: {e}\n')
+		pad.print(format_exc())
 
 
 def chat_ack(packet: Tuple[bytes, Tuple[str, int]], socket: TcpListener, pad: Pad, ack: bool = True):
@@ -161,7 +165,8 @@ def cotdantic(stdscr, args):
 			event.time = isotime()
 			event.start = isotime()
 			event.stale = isotime(minutes=5)
-			multicast.send(event.to_xml())
+			# multicast.send(event.to_xml())
+			multicast.send(event.to_bytes())
 
 		while phandler.running:
 			pli_send()

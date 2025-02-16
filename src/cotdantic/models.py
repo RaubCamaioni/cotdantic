@@ -229,7 +229,7 @@ class Remarks(CotBase, tag='remarks'):
 	source: Optional[str] = attr(default=None)
 	source_id: Optional[str] = attr(name='sourceID', default=None)
 	to: Optional[str] = attr(default=None)
-	time: Optional[str] = attr(default_factory=isotime)
+	time: Optional[str] = attr(default=None)
 
 
 class ServerDestination(CotBase, tag='__serverdestination'):
@@ -415,9 +415,9 @@ class Detail(CotBase, tag='detail'):
 
 
 class TakControl(CotBase):
-	minProtoVersion: int = 0
-	maxProtoVersion: int = 0
-	contactUid: str = ''
+	min_proto_version: int = attr(name='minProtoVersion', default=0)
+	max_proto_version: int = attr(name='maxProtoVersion', default=0)
+	contact_uid: str = attr(name='contactUid', default='')
 
 
 class EventBase(CotBase, Generic[T], tag='event'):

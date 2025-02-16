@@ -1,3 +1,4 @@
+import takproto.takproto
 from .models import (
 	PrecisionLocation,
 	TakControl,
@@ -16,11 +17,16 @@ from .models import (
 )
 
 import xml.etree.ElementTree as ET
-from typing import get_args
+from typing import get_args, Optional
+import takproto
+from enum import Enum
 
-from takproto import parse_proto, xml2proto
-from takproto.functions import msg2proto
-from takproto.proto import TakMessage
+
+# NOTE: order of iteration matters here
+class ProtoVersion(Enum):
+	MESH = b'\xbf\x01\xbf'
+	PROTO = b'\xbf'
+
 
 PROTO_KNOWN_ELEMENTS = {
 	# 'contact', # check non-standard values
@@ -41,12 +47,24 @@ def is_xml(data: bytes) -> bool:
 		return False
 
 
+def handle_tak_protocal(data: bytes) -> bytes:
+	for proto_version in ProtoVersion:
+		value = proto_version.value
+		length = len(value)
+
+		if len(data) < length:
+			continue
+
+		if data[:length] == value:
+			return data[length:]
+
+	return data[3:]
+
+
 def is_proto(data: bytes) -> bool:
-	try:
-		tak_message = parse_proto(data)
-		return tak_message is not None
-	except TypeError:
-		return False
+	data = handle_tak_protocal(data)
+	tak_message = takproto.TakMessage().parse(data)
+	return bool(tak_message.cot_event._serialized_on_wire)
 
 
 def parse_cot(data):
@@ -60,14 +78,15 @@ def parse_cot(data):
 
 
 def proto2model(cls: EventBase, proto: bytes) -> EventBase:
-	proto_message = parse_proto(proto)
-	proto_event = proto_message.cotEvent
+	proto = handle_tak_protocal(proto)
+	proto_message = takproto.TakMessage().parse(proto)
+	proto_event = proto_message.cot_event
 	proto_detail = proto_event.detail
 	proto_contact = proto_detail.contact
 	proto_status = proto_detail.status
 	proto_takv = proto_detail.takv
-	proto_pl = proto_detail.precisionLocation
-	tak_control = proto_message.takControl
+	proto_pl = proto_detail.precision_location
+	tak_control = proto_message.tak_control
 
 	point = Point(
 		lat=proto_event.lat,
@@ -78,27 +97,27 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	)
 
 	contact = None
-	if proto_detail.HasField('contact'):
+	if proto_detail.contact._serialized_on_wire:
 		contact = Contact(
 			callsign=proto_contact.callsign or None,
 			endpoint=proto_contact.endpoint or None,
 		)
 
 	status = None
-	if proto_detail.HasField('status'):
+	if proto_detail.status._serialized_on_wire:
 		status = Status(
 			battery=proto_status.battery or None,
 		)
 
 	group = None
-	if proto_detail.HasField('group'):
+	if proto_detail.group._serialized_on_wire:
 		group = Group(
 			name=proto_detail.group.name or None,
 			role=proto_detail.group.role or None,
 		)
 
 	takv = None
-	if proto_detail.HasField('takv'):
+	if proto_detail.takv._serialized_on_wire:
 		takv = Takv(
 			device=proto_takv.device or None,
 			platform=proto_takv.platform or None,
@@ -107,14 +126,14 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 		)
 
 	precision_location = None
-	if proto_detail.HasField('precisionLocation'):
+	if proto_detail.precision_location._serialized_on_wire:
 		precision_location = PrecisionLocation(
 			geopointsrc=proto_pl.geopointsrc or None,
 			altsrc=proto_pl.altsrc or None,
 		)
 
 	track = None
-	if proto_detail.HasField('track'):
+	if proto_detail.track._serialized_on_wire:
 		track = Track(
 			speed=proto_detail.track.speed,
 			course=proto_detail.track.course,
@@ -124,7 +143,7 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	types_in_union = get_args(annotation)
 	custom_type = types_in_union[0]
 
-	raw_xml = f'<detail>{proto_detail.xmlDetail}</detail>'
+	raw_xml = f'<detail>{proto_detail.xml_detail}</detail>'
 	detail: Detail = custom_type.from_xml(raw_xml)
 
 	detail.precision_location = detail.precision_location or precision_location
@@ -140,9 +159,9 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	detail.raw_xml = b''.join(tags)
 
 	control = TakControl(
-		minProtoVersion=tak_control.minProtoVersion,
-		maxProtoVersion=tak_control.maxProtoVersion,
-		contactUid=tak_control.contactUid,
+		minProtoVersion=tak_control.min_proto_version,
+		maxProtoVersion=tak_control.max_proto_version,
+		contactUid=tak_control.contact_uid,
 	)
 
 	event = cls(
@@ -153,9 +172,9 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 		opex=proto_event.opex or None,
 		uid=proto_event.uid,
 		how=proto_event.how,
-		time=epoch2iso(proto_event.sendTime),
-		start=epoch2iso(proto_event.startTime),
-		stale=epoch2iso(proto_event.staleTime),
+		time=epoch2iso(proto_event.send_time),
+		start=epoch2iso(proto_event.start_time),
+		stale=epoch2iso(proto_event.stale_time),
 		point=point,
 		detail=detail,
 	)
@@ -163,37 +182,35 @@ def proto2model(cls: EventBase, proto: bytes) -> EventBase:
 	return event
 
 
-def model2xml2proto(model: EventBase):
-	xml = model.to_xml()
-	return bytes(xml2proto(xml))
+def model2xml2proto(model: EventBase) -> bytes:
+	return model2proto(model)
 
 
-def model2proto(model: EventBase) -> bytes:
-	message = model2message(model)
-	return bytes(msg2proto(message, None))
+def model2proto(model: EventBase, proto_version: Optional[ProtoVersion] = ProtoVersion.MESH) -> bytes:
+	return proto_version.value + bytes(model2message(model))
 
 
-def model2message(model: EventBase) -> TakMessage:
-	tak_message = TakMessage()
+def model2message(model: EventBase) -> takproto.TakMessage:
+	tak_message = takproto.TakMessage()
 
-	tak_message.takControl.minProtoVersion = model.tak_control.minProtoVersion
-	tak_message.takControl.maxProtoVersion = model.tak_control.maxProtoVersion
-	tak_message.takControl.contactUid = model.tak_control.contactUid
+	tak_message.tak_control.min_proto_version = model.tak_control.min_proto_version
+	tak_message.tak_control.min_proto_version = model.tak_control.max_proto_version
+	tak_message.tak_control.contact_uid = model.tak_control.contact_uid
 
 	geo_chat = 'GeoChat.' in model.uid
 	if geo_chat:
-		tak_message.takControl.contactUid = model.uid.split('.')[1]
+		tak_message.tak_control.contact_uid = model.uid.split('.')[1]
 
-	tak_event = tak_message.cotEvent
+	tak_event = tak_message.cot_event
 	tak_event.type = model.type
 	tak_event.access = model.access or ''
 	tak_event.qos = model.qos or ''
 	tak_event.opex = model.opex or ''
 	tak_event.uid = model.uid
 	tak_event.how = model.how
-	tak_event.sendTime = iso2epoch(model.time)
-	tak_event.startTime = iso2epoch(model.start)
-	tak_event.staleTime = iso2epoch(model.stale)
+	tak_event.send_time = iso2epoch(model.time)
+	tak_event.start_time = iso2epoch(model.start)
+	tak_event.stale_time = iso2epoch(model.stale)
 	tak_event.lat = model.point.lat
 	tak_event.lon = model.point.lon
 	tak_event.hae = model.point.hae
@@ -211,7 +228,7 @@ def model2message(model: EventBase) -> TakMessage:
 
 	if geo_chat:
 		detail_str = detail.to_xml().decode()
-		tak_detail.xmlDetail = detail_str[8:-9]
+		tak_detail.xml_detail = detail_str[8:-9]
 
 	else:
 		xml_string = b''
@@ -244,7 +261,7 @@ def model2message(model: EventBase) -> TakMessage:
 				xml_string += instance.to_xml()
 
 		xml_string += detail.raw_xml
-		tak_detail.xmlDetail = xml_string.decode()
+		tak_detail.xml_detail = xml_string.decode()
 
 	if encode_contact and detail.contact is not None:
 		tak_detail.contact.endpoint = detail.contact.endpoint or ''
@@ -255,8 +272,8 @@ def model2message(model: EventBase) -> TakMessage:
 		tak_detail.group.role = detail.group.role or ''
 
 	if detail.precision_location is not None:
-		tak_detail.precisionLocation.geopointsrc = detail.precision_location.geopointsrc or ''
-		tak_detail.precisionLocation.altsrc = detail.precision_location.altsrc or ''
+		tak_detail.precision_location.geopointsrc = detail.precision_location.geopointsrc or ''
+		tak_detail.precision_location.altsrc = detail.precision_location.altsrc or ''
 
 	if encode_status and detail.status is not None:
 		tak_detail.status.battery = detail.status.battery or 0

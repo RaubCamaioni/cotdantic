@@ -1,11 +1,5 @@
-from cotdantic import converters
 from cotdantic import *
-import lxml.etree as ET
-import takproto
 import pytest
-
-# monkey patch XML encoder
-takproto.functions.ET = ET
 
 
 def default_cot():
@@ -78,23 +72,6 @@ def test_proto_lossless():
 	event_dst.detail.raw_xml = ''
 
 	assert event_src == event_dst
-
-
-@pytest.mark.skip(reason='takproto does not copy takcontrol to proto')
-def test_message_custom():
-	from takproto.constants import TAKProtoVer
-
-	event_src = default_cot()
-	event_src.detail.contact.phone = None
-
-	# direct method
-	direct_proto = event_src.to_bytes()
-
-	# xml method
-	xml = event_src.to_xml()
-	xml_proto = bytes(converters.xml2proto(xml, TAKProtoVer.MESH))
-
-	assert direct_proto == xml_proto
 
 
 @pytest.mark.skip(reason='takproto does not copy takcontrol to proto')
