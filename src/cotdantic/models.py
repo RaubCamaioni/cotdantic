@@ -256,6 +256,16 @@ class Chat(CotBase, tag='__chat'):
 	chatgrp: Optional[ChatGroup] = element(default=None)
 
 
+class ChatReceipt(CotBase, tag='__chatreceipt'):
+	parent: Optional[str] = attr(default=None)
+	group_owner: Optional[bool] = attr(name='groupOwner', default=None)
+	message_id: Optional[str] = attr(name='messageId', default=None)
+	chatroom: Optional[str] = attr(default=None)
+	id: Optional[str] = attr(default=None)
+	sender_callsign: Optional[str] = attr(default=None)
+	chat_group: Optional[ChatGroup] = element(default=None)
+
+
 class Hud(CotBase, tag='hud'):
 	role: Optional[str] = attr(default=None)
 
@@ -380,6 +390,7 @@ class Detail(CotBase, tag='detail'):
 	bearingUnits: Optional[BearingUnits] = element(default=None)
 	bearing: Optional[Bearing] = element(default=None)
 	range: Optional[Range] = element(default=None)
+	chat_receipt: Optional[ChatReceipt] = element(default=None)
 
 	@classmethod
 	@lru_cache
